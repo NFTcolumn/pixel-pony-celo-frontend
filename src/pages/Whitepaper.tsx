@@ -92,10 +92,10 @@ export default function Whitepaper() {
             <li><strong>Game Operations:</strong> Sustainable gameplay</li>
           </ul>
 
-          <h3 style={{ margin: '16px 0 8px' }}>ETH Entry Fees (0.0005 ETH per bet)</h3>
+          <h3 style={{ margin: '16px 0 8px' }}>CELO Entry Fees (0.01 CELO per bet)</h3>
           <ul>
-            <li><strong>Dev Wallet:</strong> 50% of ETH fees</li>
-            <li><strong>Marketing Wallet:</strong> 50% of ETH fees</li>
+            <li><strong>Dev Wallet:</strong> 50% of CELO fees</li>
+            <li><strong>Marketing Wallet:</strong> 50% of CELO fees</li>
           </ul>
         </section>
 
