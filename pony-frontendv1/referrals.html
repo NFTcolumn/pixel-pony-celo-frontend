@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pixel Ponies - Referral Program</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- iOS App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+
+    <!-- iOS App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pixel Ponies">
+
+    <!-- Android App Configuration -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#bdc3ff">
+
+    <!-- SEO and Social -->
+    <meta name="description" content="Join the Pixel Ponies Referral Program - Earn 10% of race fees from every friend you refer!">
+    <meta name="keywords" content="pixel ponies, referral program, earn crypto, blockchain game">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Pixel Ponies - Referral Program">
+    <meta property="og:description" content="Earn 10% of race fees from every friend you refer!">
+    <meta property="og:image" content="/favicon.ico">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Pixel Ponies - Referral Program">
+    <meta name="twitter:description" content="Earn 10% of race fees from every friend you refer!">
+    <meta name="twitter:image" content="/favicon.ico">
+
+    <!-- Import Referral-specific styles -->
+    <link rel="stylesheet" href="styles/referral.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="logo.png" alt="Pixel Ponies Logo" style="height: 48px; margin-bottom: 8px;">
+            <h1>REFERRAL PROGRAM</h1>
+            <p>EARN REWARDS BY SHARING PIXEL PONIES</p>
+        </header>
+
+        <main>
+            <!-- Wallet Connection Section -->
+            <section id="walletSection" class="wallet-section">
+                <h2>Connect Wallet</h2>
+                <div id="walletContent">
+                    <p style="margin-bottom: 16px; font-size: 8px;">Connect your wallet to access your referral dashboard</p>
+                    <button id="connectWalletBtn" class="wallet-btn">CONNECT WALLET</button>
+                    <div id="walletInfo" style="display: none;">
+                        <p style="font-size: 6px; word-break: break-all;">Connected: <span id="walletAddress"></span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Referral Dashboard (hidden until wallet connected) -->
+            <div id="referralDashboard" style="display: none;">
+
+                <!-- Your Referral Link Section -->
+                <section class="referral-link-section">
+                    <h2>🔗 YOUR REFERRAL LINK</h2>
+                    <div class="referral-link-box">
+                        <input type="text" id="referralLink" readonly />
+                        <button onclick="copyReferralLink()" class="copy-btn">COPY LINK</button>
+                    </div>
+                    <p style="font-size: 6px; margin-top: 8px; text-align: center;">Share this link to earn rewards from every race your friends play!</p>
+                </section>
+
+                <!-- Your Rewards Section -->
+                <section class="referral-rewards">
+                    <h2>💰 YOUR REWARDS</h2>
+                    <div class="rewards-info">
+                        <div class="stat-box">
+                            <p class="stat-label">PENDING REWARDS</p>
+                            <p class="stat-value" id="pendingRewards">0.00000 ETH</p>
+                        </div>
+                        <p class="reward-rate">🏇 Earn 0.00005 ETH per referred race!</p>
+                    </div>
+                    <button id="claimButton" onclick="claimReferralRewards()" disabled class="claim-btn">
+                        NEED 10 RACES TO CLAIM (MIN: 0.0005 ETH)
+                    </button>
+                </section>
+
+                <!-- How It Works Section -->
+                <section class="referral-info">
+                    <h2>📋 HOW IT WORKS</h2>
+                    <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                        <ul class="referral-benefits">
+                            <li>Share your referral link with friends</li>
+                            <li>Earn 10% of race fees (0.00005 ETH) per race they play</li>
+                            <li>Claim rewards after 10+ referred races (min 0.0005 ETH)</li>
+                            <li>No limit on referrals - earn forever! 💰</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Referral Stats Section -->
+                <section class="referral-stats">
+                    <h2>📊 YOUR STATS</h2>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <p class="stat-label">REFERRED RACES</p>
+                            <p class="stat-value" id="totalRaces">0</p>
+                        </div>
+                        <div class="stat-box">
+                            <p class="stat-label">TOTAL EARNED</p>
+                            <p class="stat-value" id="totalEarned">0.00000 ETH</p>
+                        </div>
+                        <div class="stat-box">
+                            <p class="stat-label">TIMES CLAIMED</p>
+                            <p class="stat-value" id="claimCount">0</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Navigation -->
+            <section>
+                <div style="text-align: center; padding: 16px;">
+                    <a href="/" style="color: #333; font-size: 8px; text-decoration: underline; margin: 0 8px;">HOME</a>
+                    <a href="/game" style="color: #333; font-size: 8px; text-decoration: underline; margin: 0 8px;">PLAY NOW</a>
+                    <a href="/story" style="color: #333; font-size: 8px; text-decoration: underline; margin: 0 8px;">STORY</a>
+                </div>
+            </section>
+        </main>
+
+        <footer style="text-align: center; padding: 16px; font-size: 6px; color: #666;">
+            <p>Built on Base Mainnet | Smart Contract: 0x82249d29af7d7b1F20A63D7aa1248A40c58848e8</p>
+            <p style="margin-top: 8px;">© 2024 Pixel Ponies | <a href="/terms" style="color: #666;">Terms</a> | <a href="/privacy" style="color: #666;">Privacy</a></p>
+        </footer>
+    </div>
+
+    <!-- Load ethers.js from CDN (same as game.html) -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+    <!-- Load Referral Module -->
+    <script type="module">
+        import ReferralManager from './modules/referral.js';
+
+        // Initialize on page load after ethers is loaded
+        window.addEventListener('load', () => {
+            // Wait a bit to ensure ethers is fully loaded
+            setTimeout(() => {
+                if (typeof ethers === 'undefined') {
+                    console.error('Ethers.js failed to load!');
+                    alert('Failed to load required libraries. Please refresh the page.');
+                    return;
+                }
+                window.referralManager = new ReferralManager();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

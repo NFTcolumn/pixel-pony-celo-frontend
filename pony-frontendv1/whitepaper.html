@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Whitepaper - Pixel Ponies</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- iOS App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+
+    <!-- SEO -->
+    <meta name="description" content="Pixel Ponies technical whitepaper - Instant 16-Horse Racing on Base with Fair Tokenomics">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Whitepaper - Pixel Ponies">
+    <meta property="og:description" content="Technical whitepaper - Instant 16-Horse Racing on Base with Fair Tokenomics">
+    <meta property="og:image" content="/favicon.ico">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Whitepaper - Pixel Ponies">
+    <meta name="twitter:description" content="Technical whitepaper - Instant 16-Horse Racing on Base with Fair Tokenomics">
+    <meta name="twitter:image" content="/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/">
+                <img src="logo.png" alt="Pixel Ponies Logo" style="height: 48px; margin-bottom: 8px;">
+            </a>
+            <h1>WHITEPAPER V1</h1>
+            <p>INSTANT 16-HORSE RACING ON BASE</p>
+        </header>
+
+        <main>
+            <!-- Abstract -->
+            <section>
+                <h2>Abstract</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <p>Pixel Pony introduces a straightforward, transparent gaming ecosystem that combines instant single-player horse racing with sustainable tokenomics. Built on Base Mainnet with security-hardened smart contracts, the protocol generates revenue through platform fees while protecting players and the ecosystem with an innovative pull-based jackpot failsafe system.</p>
+                </div>
+            </section>
+
+            <!-- Protocol Overview -->
+            <section>
+                <h2>1. Protocol Overview</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Game Mechanics</h3>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>Instant racing:</strong> Bet placed → Race executes immediately → Result determined</li>
+                        <li><strong>Single-player focus:</strong> Each bet creates its own race</li>
+                        <li><strong>16 horses per race</strong> with enhanced on-chain randomness (10 entropy sources)</li>
+                        <li><strong>Fair multipliers:</strong> 10x (1st), 2.5x (2nd), 1x (3rd place)</li>
+                        <li><strong>Pure on-chain execution:</strong> No external dependencies</li>
+                        <li><strong>Lottery system</strong> with progressive jackpot</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Key Innovation: PULL-BASED JACKPOT FAILSAFE</h3>
+                    <p style="margin-bottom: 8px;">Pixel Pony protects the gaming ecosystem with an innovative failsafe mechanism:</p>
+                    <ul style="margin-left: 16px;">
+                        <li>Jackpot automatically triggers distribution if it exceeds 50% of game supply</li>
+                        <li>Players claim their proportional share (based on total wagered)</li>
+                        <li>Each player pays only their own gas (~$2-5)</li>
+                        <li>Scalable to unlimited players (no gas limit issues)</li>
+                        <li>Fully autonomous after deployment</li>
+                        <li>Prevents game supply lockup</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Tokenomics -->
+            <section>
+                <h2>2. Tokenomics Structure</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Total Supply: 100 Trillion PONY Tokens</h3>
+
+                    <p><strong>Initial Distribution:</strong></p>
+                    <ul style="margin-left: 16px; margin-top: 8px;">
+                        <li><strong>Game Contract:</strong> 50T tokens (50%) - For gameplay rewards and payouts</li>
+                        <li><strong>Liquidity Pool:</strong> 40T tokens (40%) - For DEX liquidity</li>
+                        <li><strong>Marketing:</strong> 5T tokens (5%) - Marketing and growth initiatives</li>
+                        <li><strong>Dev Operations:</strong> 5T tokens (5%) - Development and operations</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Security Features:</h3>
+                    <ul style="margin-left: 16px;">
+                        <li>✅ <strong>No minting</strong> capability after deployment</li>
+                        <li>✅ <strong>Fixed pragma</strong> (Solidity 0.8.20) - No compiler variations</li>
+                        <li>✅ <strong>Zero address validation</strong> - All inputs validated</li>
+                        <li>✅ <strong>ReentrancyGuard</strong> - Protection against reentrancy attacks</li>
+                        <li>✅ <strong>Checked transfers</strong> - All token transfers verified</li>
+                        <li>✅ <strong>Gas optimized</strong> - Efficient execution</li>
+                        <li>✅ <strong>Pull-based claims</strong> - Scalable failsafe system</li>
+                        <li>✅ <strong>Ownership renounceable</strong> - Can become fully immutable</li>
+                        <li>✅ <strong>Transparent</strong> - Verified source code on Basescan</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Revenue Model -->
+            <section>
+                <h2>3. Revenue Model</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Platform Fees (10% of all bets in PONY)</h3>
+
+                    <p><strong>Fee Distribution:</strong></p>
+                    <ul style="margin-left: 16px; margin-top: 8px;">
+                        <li><strong>Dev Wallet:</strong> 50% of platform fee (5% of total bets)</li>
+                        <li><strong>Marketing Wallet:</strong> 25% of platform fee (2.5% of total bets)</li>
+                        <li><strong>Jackpot Pool:</strong> 25% of platform fee (2.5% of total bets)</li>
+                    </ul>
+
+                    <p style="margin-top: 12px;"><strong>Remaining 90% goes to:</strong></p>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>Winner Payouts:</strong> Direct payouts to winning bettors (10x, 2.5x, 1x)</li>
+                        <li><strong>Game Operations:</strong> Sustainable gameplay</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">ETH Entry Fees (0.0005 ETH per bet)</h3>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>Dev Wallet:</strong> 50% of ETH fees</li>
+                        <li><strong>Marketing Wallet:</strong> 50% of ETH fees</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Player Economics -->
+            <section>
+                <h2>4. Player Economics</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Win Probabilities</h3>
+                    <ul style="margin-left: 16px;">
+                        <li>3 winning positions out of 16 horses</li>
+                        <li>~18.75% chance to win something</li>
+                        <li>Fair odds with house edge</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Expected Value (per 10B PONY bet)</h3>
+                    <ul style="margin-left: 16px;">
+                        <li>1st place (6.25% chance): 100B PONY</li>
+                        <li>2nd place (6.25% chance): 25B PONY</li>
+                        <li>3rd place (6.25% chance): 10B PONY</li>
+                        <li>Loss (81.25% chance): 0 PONY</li>
+                        <li>Platform takes: 1B PONY (10%)</li>
+                        <li><strong>Expected return: ~8.4B PONY (84% RTP)</strong></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Technical Implementation -->
+            <section>
+                <h2>5. Technical Implementation</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Enhanced Randomness - 10 Entropy Sources</h3>
+                    <ul style="margin-left: 16px;">
+                        <li>block.timestamp</li>
+                        <li>block.prevrandao</li>
+                        <li>block.number</li>
+                        <li>raceId</li>
+                        <li>horseId</li>
+                        <li>msg.sender</li>
+                        <li>tx.gasprice</li>
+                        <li>totalRaces</li>
+                        <li>nonce (incremented)</li>
+                        <li>jackpotPool</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Network Deployment</h3>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>Base Mainnet</strong> (Chain ID: 8453)</li>
+                        <li><strong>EVM compatible:</strong> Standard Solidity</li>
+                        <li><strong>Low gas costs:</strong> Optimized for Base</li>
+                        <li><strong>Fast finality:</strong> Quick transaction confirmation</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Competitive Advantages -->
+            <section>
+                <h2>6. Competitive Advantages</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Innovation: Pull-Based Failsafe</h3>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>World's first:</strong> Pull-based jackpot failsafe in gaming</li>
+                        <li><strong>Scalable:</strong> Works with unlimited players</li>
+                        <li><strong>Fair:</strong> Proportional distribution</li>
+                        <li><strong>Gas efficient:</strong> Each player pays own gas</li>
+                        <li><strong>Autonomous:</strong> Works forever</li>
+                    </ul>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Base Network Benefits</h3>
+                    <ul style="margin-left: 16px;">
+                        <li><strong>Low gas costs:</strong> Affordable gameplay</li>
+                        <li><strong>Fast finality:</strong> Quick confirmations</li>
+                        <li><strong>Growing ecosystem:</strong> Base adoption</li>
+                        <li><strong>Coinbase integration:</strong> Easy onboarding</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Mainnet Deployment -->
+            <section>
+                <h2>7. Mainnet Deployment Info</h2>
+                <div style="text-align: left; font-size: 6px; line-height: 1.8; padding: 16px;">
+                    <h3 style="font-size: 9px; margin-bottom: 8px;">Base Mainnet Contracts (LIVE)</h3>
+
+                    <p><strong>PonyTokenV1 (PONY)</strong></p>
+                    <p style="word-break: break-all;">Address: 0x6ab297799335E7b0f60d9e05439Df156cf694Ba7</p>
+                    <p>Status: ✅ Deployed & Verified</p>
+                    <p style="margin-bottom: 12px;">Total Supply: 100,000,000,000,000 PONY (100 Trillion)</p>
+
+                    <p><strong>PixelPonyV1 (Racing Game)</strong></p>
+                    <p style="word-break: break-all;">Address: 0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8</p>
+                    <p>Status: ✅ Deployed & Verified</p>
+                    <p style="margin-bottom: 12px;">Game Reserve: 50,000,000,000,000 PONY (50 Trillion)</p>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Configured Wallets</h3>
+                    <p><strong>Dev Wallet:</strong> 0x4AFE1f7FF7C452e2B5446dfFdB0ECf266659C3ff</p>
+                    <p><strong>Marketing Wallet:</strong> 0x9C68df5Cabf33a8d189aD836D8d34CD1c38E12b3</p>
+                    <p><strong>Deployer:</strong> 0xE4455Fa057F058072a34A3DA4088225D3b605542</p>
+
+                    <h3 style="font-size: 9px; margin: 16px 0 8px;">Economic Parameters</h3>
+                    <p><strong>Base Fee:</strong> 0.0005 ETH per bet</p>
+                    <p><strong>Platform Fee:</strong> 10% of bet amount (PONY)</p>
+                    <p><strong>Jackpot Threshold:</strong> 50% of game supply (25T PONY)</p>
+                    <p><strong>Min Bet:</strong> Any amount (even 1 PONY)</p>
+                    <p><strong>Max Bet:</strong> 50,000,000,000 PONY (50B)</p>
+                </div>
+            </section>
+
+            <!-- Conclusion -->
+            <section>
+                <h2>Conclusion</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <p>Pixel Pony V1 represents a straightforward approach to blockchain gaming: instant races, fair odds, transparent tokenomics, and innovative failsafe protection.</p>
+
+                    <p style="margin-top: 12px;"><strong>Key Highlights:</strong></p>
+                    <ul style="margin-left: 16px; margin-top: 8px;">
+                        <li>✅ Deployed on Base Mainnet</li>
+                        <li>✅ Zero security vulnerabilities</li>
+                        <li>✅ Verified source code</li>
+                        <li>✅ Pull-based failsafe (scalable to unlimited players)</li>
+                        <li>✅ Fair tokenomics</li>
+                        <li>✅ Gas efficient</li>
+                        <li>✅ Instant gameplay</li>
+                    </ul>
+
+                    <p style="margin-top: 16px; font-style: italic;">The future of gaming is instant. The future of tokens is utility-driven. The future of jackpots is fair. Pixel Pony delivers all three.</p>
+                </div>
+            </section>
+
+            <!-- Back to Game -->
+            <section style="text-align: center; padding: 24px;">
+                <h2 style="margin-bottom: 16px;">Ready to Experience It?</h2>
+                <a href="/game">
+                    <button style="font-size: 12px; padding: 16px 32px;">
+                        🎮 PLAY NOW 🎮
+                    </button>
+                </a>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer style="background: #ffffff; border: 2px solid #cccccc; margin-top: 24px; padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+                <a href="/" style="color: #000000; text-decoration: none; font-size: 8px;">🏠 HOME</a>
+                <a href="/game" style="color: #ff6b6b; text-decoration: none; font-size: 8px;">🎮 PLAY NOW</a>
+                <a href="/buy" style="color: #ff6b6b; text-decoration: none; font-size: 8px;">💰 BUY $PONY</a>
+                <a href="/terms" style="color: #000000; text-decoration: none; font-size: 8px;">⚖️ TERMS</a>
+                <a href="/privacy" style="color: #000000; text-decoration: none; font-size: 8px;">🔒 PRIVACY</a>
+            </div>
+            <p style="font-size: 6px; color: #666666; line-height: 1.6;">
+                Pixel Ponies © 2025 | 16 Pixelated Ponies Racing On-Chain For No Reason<br>
+                Built on Base Network | Not financial advice | Play responsibly
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

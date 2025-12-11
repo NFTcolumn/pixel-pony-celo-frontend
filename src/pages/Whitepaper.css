@@ -1,0 +1,128 @@
+.whitepaper-page {
+    padding: 0;
+}
+
+.whitepaper-container {
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.whitepaper-container h1 {
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333333;
+}
+
+.whitepaper-subtitle {
+    text-align: center;
+    font-size: 9px;
+    margin-bottom: 24px;
+    color: #666666;
+}
+
+.whitepaper-section {
+    margin-bottom: 24px;
+}
+
+.whitepaper-section h2 {
+    font-size: 12px;
+    margin-bottom: 12px;
+    color: #ff6b6b;
+}
+
+.whitepaper-section h3 {
+    font-size: 10px;
+    margin-bottom: 8px;
+    color: #333333;
+}
+
+.whitepaper-section p {
+    font-size: 8px;
+    line-height: 1.8;
+    color: #666666;
+    margin-bottom: 8px;
+}
+
+.whitepaper-section ul {
+    font-size: 8px;
+    line-height: 1.8;
+    margin-left: 20px;
+    color: #666666;
+}
+
+.whitepaper-section ul li {
+    margin-bottom: 4px;
+}
+
+.whitepaper-highlight {
+    background: #f0f0f0;
+    padding: 16px;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.whitepaper-highlight h2,
+.whitepaper-highlight h3 {
+    color: #333333;
+}
+
+.whitepaper-highlight p,
+.whitepaper-highlight ul {
+    color: #666666;
+}
+
+.contract-box {
+    background: #f0f0f0;
+    padding: 12px;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.contract-box p {
+    font-size: 8px;
+    color: #333333;
+    margin-bottom: 4px;
+}
+
+.contract-address {
+    font-size: 7px;
+    word-break: break-all;
+    color: #666666;
+}
+
+.whitepaper-cta {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.whitepaper-cta-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #ff6b6b;
+    color: #ffffff;
+    text-decoration: none;
+    border: 2px solid #d32f2f;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.whitepaper-cta-button:hover {
+    background: #f55555;
+    transform: scale(1.05);
+}
+
+.whitepaper-version {
+    margin-top: 24px;
+    font-size: 6px;
+    color: #999999;
+    text-align: center;
+}

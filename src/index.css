@@ -1,0 +1,144 @@
+/* Base Styles - Typography, Layout, Colors */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Press Start 2P', monospace;
+    background: #bdc3ff;
+    color: #333333;
+    min-height: 100vh;
+    image-rendering: pixelated;
+    line-height: 1.6;
+    font-size: 8px;
+}
+
+#root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 8px;
+    background: #bdc3ff;
+    position: relative;
+    flex: 1;
+}
+
+/* Messages */
+.success-message {
+    background: #00ffff;
+    color: #000000;
+    border: 2px solid #ffffff;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 8px;
+    text-align: center;
+}
+
+.error-message {
+    background: #d32f2f;
+    color: #ffffff;
+    border: 2px solid #b71c1c;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 8px;
+    text-align: center;
+}
+
+/* Buttons */
+button {
+    font-family: 'Press Start 2P', monospace;
+    background: #ff6b6b;
+    color: #ffffff;
+    border: 2px solid #d32f2f;
+    padding: 8px 12px;
+    font-size: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background: #f55555;
+    transform: scale(1.02);
+}
+
+button:active {
+    background: #e04444;
+    transform: scale(0.98);
+}
+
+button:disabled {
+    background: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Input fields */
+input[type="number"],
+input[type="text"] {
+    font-family: 'Press Start 2P', monospace;
+    background: #ffffff;
+    color: #333333;
+    border: 2px solid #cccccc;
+    padding: 4px 8px;
+    font-size: 8px;
+    width: 100%;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus {
+    outline: none;
+    border-color: #ff6b6b;
+    box-shadow: 0 0 4px rgba(255, 107, 107, 0.3);
+}
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #ff6b6b;
+    text-decoration: underline;
+}
+
+/* Common Section Styles */
+section {
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+section h2 {
+    font-size: 10px;
+    color: #333333;
+    margin-bottom: 12px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+section h3 {
+    font-size: 9px;
+    color: #333333;
+    margin-bottom: 8px;
+    margin-top: 12px;
+}
+
+section p {
+    font-size: 8px;
+    line-height: 1.8;
+    margin-bottom: 8px;
+}

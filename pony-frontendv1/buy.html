@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Buy $PONY - Pixel Ponies</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- iOS App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+
+    <!-- SEO -->
+    <meta name="description" content="Buy $PONY tokens to participate in Pixel Ponies racing">
+    <meta name="keywords" content="pixel ponies, buy pony, dex, base, blockchain">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Buy $PONY - Pixel Ponies">
+    <meta property="og:description" content="Get $PONY tokens to race and win on Base blockchain">
+    <meta property="og:image" content="/favicon.ico">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Buy $PONY - Pixel Ponies">
+    <meta name="twitter:description" content="Get $PONY tokens to race and win on Base blockchain">
+    <meta name="twitter:image" content="/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/">
+                <img src="logo.png" alt="Pixel Ponies Logo" style="height: 48px; margin-bottom: 8px;">
+            </a>
+            <h1>BUY $PONY TOKENS</h1>
+            <p>GET TOKENS TO RACE AND WIN!</p>
+        </header>
+
+        <main>
+            <!-- Token Info -->
+            <section class="race-timer">
+                <h2>$PONY Token Information</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8;">
+                    <p><strong>Token Symbol:</strong> $PONY</p>
+                    <p><strong>Network:</strong> Base Chain</p>
+                    <p><strong>Total Supply:</strong> 1,000,000,000 PONY</p>
+                    <p><strong>Use:</strong> Betting on races and winning jackpots</p>
+                </div>
+            </section>
+
+            <!-- DEX Options -->
+            <section class="betting-section">
+                <h2>Where to Buy $PONY</h2>
+
+                <div class="horses-grid" style="grid-template-columns: 1fr;">
+                    <!-- Uniswap -->
+                    <div class="horse-bet-button" style="margin-bottom: 12px;">
+                        <div class="horse-emoji" style="font-size: 24px;">🦄</div>
+                        <div class="horse-number">Uniswap V3</div>
+                        <div class="horse-bets">Official Liquidity Pool on Base</div>
+                        <button class="buy-button" onclick="openDEX('uniswap')" style="margin-top: 8px;">
+                            Trade on Uniswap
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Instructions -->
+            <section class="race-info">
+                <h2>How to Buy $PONY</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <p><strong>Step 1:</strong> Connect your wallet (MetaMask, Coinbase Wallet, etc.)</p>
+                    <p><strong>Step 2:</strong> Make sure you're on the Base network</p>
+                    <p><strong>Step 3:</strong> Have ETH for gas fees</p>
+                    <p><strong>Step 4:</strong> Click on a DEX above to trade</p>
+                    <p><strong>Step 5:</strong> Swap ETH/USDC for $PONY tokens</p>
+                    <p><strong>Step 6:</strong> Return to the game and start racing!</p>
+                </div>
+            </section>
+
+            <!-- Important Notes -->
+            <section class="jackpot-section">
+                <h2>⚠️ Important Notes</h2>
+                <div style="text-align: left; font-size: 8px; line-height: 1.8; padding: 16px;">
+                    <p><strong>⚠️ Always verify the contract address before trading</strong></p>
+                    <p><strong>💰 Start with small amounts to test</strong></p>
+                    <p><strong>🔒 Never share your private keys or seed phrase</strong></p>
+                    <p><strong>📱 Use official DEX websites only</strong></p>
+                    <p><strong>⛽ Keep some ETH for gas fees</strong></p>
+                </div>
+            </section>
+
+            <!-- Back to Game -->
+            <section class="user-bets">
+                <h2>Ready to Race?</h2>
+                <div style="text-align: center; padding: 16px;">
+                    <a href="/game">
+                        <button style="font-size: 12px; padding: 16px 32px;">
+                            🎮 PLAY NOW 🎮
+                        </button>
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Token contract address on Base Mainnet
+        const TOKEN_ADDRESS = "0x6ab297799335E7b0f60d9e05439Df156cf694Ba7";
+        
+        function openDEX(dex) {
+            let url;
+            
+            switch(dex) {
+                case 'uniswap':
+                    url = `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=${TOKEN_ADDRESS}&chain=base`;
+                    break;
+                case 'pancakeswap':
+                    url = `https://pancakeswap.finance/swap?inputCurrency=ETH&outputCurrency=${TOKEN_ADDRESS}&chainId=8453`;
+                    break;
+                case 'sushiswap':
+                    url = `https://www.sushi.com/swap?fromChainId=8453&fromCurrency=NATIVE&toChainId=8453&toCurrency=${TOKEN_ADDRESS}`;
+                    break;
+                case 'baseswap':
+                    url = `https://baseswap.fi/swap?inputCurrency=ETH&outputCurrency=${TOKEN_ADDRESS}`;
+                    break;
+                default:
+                    url = `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=${TOKEN_ADDRESS}&chain=base`;
+            }
+            
+            window.open(url, '_blank');
+        }
+
+        // Copy token address to clipboard
+        function copyTokenAddress() {
+            navigator.clipboard.writeText(TOKEN_ADDRESS).then(function() {
+                alert('Token address copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>

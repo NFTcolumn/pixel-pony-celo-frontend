@@ -1,0 +1,207 @@
+.home-page {
+    padding: 0;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 48px 24px;
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.hero-logo {
+    max-width: 300px;
+    height: auto;
+    margin-bottom: 16px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.hero h1 {
+    font-size: 24px;
+    color: #333333;
+    margin-bottom: 16px;
+    text-shadow: 2px 2px 0px #ff6b6b;
+}
+
+.hero-subtitle {
+    font-size: 10px;
+    color: #666666;
+    margin-bottom: 24px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cta-button {
+    font-family: 'Press Start 2P', monospace;
+    padding: 12px 24px;
+    font-size: 10px;
+    text-decoration: none;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.cta-button.primary {
+    background: #ff6b6b;
+    color: #ffffff;
+    border-color: #d32f2f;
+}
+
+.cta-button.primary:hover {
+    background: #f55555;
+    transform: scale(1.05);
+}
+
+.cta-button.secondary {
+    background: #ffffff;
+    color: #333333;
+    border-color: #cccccc;
+}
+
+.cta-button.secondary:hover {
+    background: #f0f0f0;
+    border-color: #999999;
+}
+
+.cta-button.large {
+    padding: 16px 32px;
+    font-size: 12px;
+}
+
+/* Features Section */
+.features {
+    margin-bottom: 24px;
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.features h2 {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.feature-card {
+    background: #f0f0f0;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.feature-icon {
+    font-size: 20px;
+    color: #ff6b6b;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+
+.feature-card h3 {
+    font-size: 9px;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.feature-card p {
+    font-size: 7px;
+    color: #666666;
+    line-height: 1.6;
+}
+
+/* Stats Section */
+.stats {
+    margin-bottom: 24px;
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stats h2 {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    background: #f0f0f0;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 18px;
+    color: #ff6b6b;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 7px;
+    color: #666666;
+}
+
+/* CTA Section */
+.cta-section {
+    text-align: center;
+    padding: 48px 24px;
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.cta-section h2 {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 12px;
+}
+
+.cta-section p {
+    font-size: 9px;
+    color: #666666;
+    margin-bottom: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 18px;
+    }
+
+    .feature-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

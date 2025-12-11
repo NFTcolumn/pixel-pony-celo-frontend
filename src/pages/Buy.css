@@ -1,0 +1,109 @@
+.buy-page {
+    padding: 0;
+}
+
+.buy-section {
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.buy-section h2 {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.buy-content {
+    padding: 20px;
+    text-align: center;
+}
+
+.buy-content p {
+    font-size: 9px;
+    color: #666666;
+    margin-bottom: 20px;
+}
+
+.token-address-box {
+    background: #f0f0f0;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+}
+
+.token-address-box h3 {
+    font-size: 10px;
+    color: #333333;
+    margin-bottom: 12px;
+}
+
+.token-address-box code {
+    font-size: 7px;
+    word-break: break-all;
+    background: #9999cc;
+    color: #ffffff;
+    padding: 8px;
+    display: block;
+    border: 2px solid #7777aa;
+    border-radius: 5px;
+}
+
+.buy-links-title {
+    font-size: 10px;
+    color: #333333;
+    margin-bottom: 16px;
+}
+
+.buy-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.buy-link {
+    display: block;
+    padding: 12px 24px;
+    color: #ffffff;
+    text-decoration: none;
+    border: 2px solid;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.buy-link.primary {
+    background: #ff6b6b;
+    border-color: #d32f2f;
+}
+
+.buy-link.primary:hover {
+    background: #f55555;
+    transform: scale(1.02);
+}
+
+.buy-link.secondary {
+    background: #9999cc;
+    border-color: #7777aa;
+}
+
+.buy-link.secondary:hover {
+    background: #8888bb;
+}
+
+.buy-disclaimer {
+    margin-top: 30px;
+    font-size: 7px;
+    color: #666666;
+}
+
+.buy-disclaimer p {
+    margin-bottom: 8px;
+}

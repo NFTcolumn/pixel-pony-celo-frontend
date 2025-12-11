@@ -1,0 +1,30 @@
+{
+  "name": "Pixel Ponies",
+  "short_name": "Pixel Ponies",
+  "description": "16 Pixelated Ponies Racing On-Chain For No Reason",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#bdc3ff",
+  "theme_color": "#bdc3ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "180x180",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,243 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #bdc3ff;
+}
+
+/* Header */
+.site-header {
+    background: #ffffff;
+    border-bottom: 2px solid #cccccc;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 12px 16px;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-height: 40px;
+}
+
+.logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.site-logo {
+    max-width: 150px;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+.tagline {
+    font-size: 6px;
+    color: #333333;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.main-nav {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.main-nav a {
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border: 2px solid #cccccc;
+    border-radius: 5px;
+    color: #333333;
+    text-decoration: none;
+    font-size: 8px;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.main-nav a:hover {
+    background: #ff6b6b;
+    border-color: #d32f2f;
+    color: #ffffff;
+}
+
+.wallet-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connect-dropdown {
+    position: relative;
+}
+
+.connect-btn,
+.disconnect-btn {
+    font-size: 8px;
+    padding: 8px 12px;
+    background: #ff6b6b;
+    border: 2px solid #d32f2f;
+    border-radius: 5px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.connect-btn:hover {
+    background: #f55555;
+}
+
+.disconnect-btn {
+    background: #cccccc;
+    border-color: #999999;
+    border-radius: 5px;
+    color: #333333;
+}
+
+.disconnect-btn:hover {
+    background: #999999;
+}
+
+.connector-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: #ffffff;
+    border: 2px solid #cccccc;
+    border-radius: 5px;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 150px;
+}
+
+.connector-option {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 7px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    color: #333333;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.connector-option:last-child {
+    border-bottom: none;
+}
+
+.connector-option:hover {
+    background: #f0f0f0;
+    color: #333333;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 16px;
+}
+
+/* Footer */
+.site-footer {
+    background: #ffffff;
+    border-top: 2px solid #cccccc;
+    padding: 16px;
+    margin-top: 32px;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+}
+
+.footer-section h4 {
+    font-size: 9px;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.footer-section p {
+    font-size: 7px;
+    color: #666666;
+    line-height: 1.6;
+}
+
+.footer-nav,
+.social-links,
+.contract-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.footer-nav a,
+.social-links a,
+.contract-links a {
+    font-size: 7px;
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.footer-nav a:hover,
+.social-links a:hover,
+.contract-links a:hover {
+    color: #ff6b6b;
+}
+
+.footer-bottom {
+    max-width: 1200px;
+    margin: 16px auto 0;
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.footer-bottom p {
+    font-size: 6px;
+    color: #999999;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .logo-section {
+        align-items: center;
+    }
+
+    .main-nav {
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .wallet-section {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .disconnect-btn,
+    .connect-btn {
+        width: 100%;
+    }
+}

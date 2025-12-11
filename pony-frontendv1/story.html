@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The $PONY Story - Pixel Ponies</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <style>
+        .slideshow-container {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 4px solid #000000;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
+            padding: 20px;
+        }
+
+        .slide {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .slide img {
+            width: 100%;
+            height: auto;
+            border: 2px solid #000000;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .nav-button {
+            background: #ff6b6b;
+            color: white;
+            border: 3px solid #000000;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-button:hover {
+            background: #ff5252;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
+        }
+
+        .nav-button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+        }
+
+        .nav-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+        }
+
+        .slide-counter {
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #000000;
+            padding: 8px 16px;
+            background: #bdc3ff;
+            border: 2px solid #000000;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .dots {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .dot {
+            height: 12px;
+            width: 12px;
+            margin: 0 4px;
+            background-color: #cccccc;
+            border: 2px solid #000000;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .dot.active {
+            background-color: #ff6b6b;
+        }
+
+        .dot:hover {
+            background-color: #ff9999;
+        }
+
+        .autoplay-button {
+            background: #4CAF50;
+            color: white;
+            border: 3px solid #000000;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            font-family: 'Courier New', monospace;
+            margin-top: 15px;
+        }
+
+        .autoplay-button:hover {
+            background: #45a049;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
+        }
+
+        .autoplay-button.playing {
+            background: #f44336;
+        }
+
+        .autoplay-button.playing:hover {
+            background: #da190b;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: #bdc3ff;
+            color: #000000;
+            text-decoration: none;
+            border: 2px solid #000000;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+
+        .back-link:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            color: #000000;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0px #bdc3ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="logo.png" alt="Pixel Ponies Logo" style="height: 48px; margin-bottom: 8px;">
+            <p>THE $PONY STORY</p>
+        </header>
+
+        <main style="padding: 20px;">
+            <a href="/" class="back-link">← Back to Home</a>
+
+            <h1>The $PONY Story</h1>
+
+            <div class="slideshow-container">
+                <div class="slide active">
+                    <img src="/pony-story/1.png" alt="The PONY Story - Page 1">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/2.png" alt="The PONY Story - Page 2">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/3.png" alt="The PONY Story - Page 3">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/4.png" alt="The PONY Story - Page 4">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/5.png" alt="The PONY Story - Page 5">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/6.png" alt="The PONY Story - Page 6">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/7.png" alt="The PONY Story - Page 7">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/8.png" alt="The PONY Story - Page 8">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/9.png" alt="The PONY Story - Page 9">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/10.png" alt="The PONY Story - Page 10">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/11.png" alt="The PONY Story - Page 11">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/12.png" alt="The PONY Story - Page 12">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/13.png" alt="The PONY Story - Page 13">
+                </div>
+                <div class="slide">
+                    <img src="/pony-story/14.png" alt="The PONY Story - Page 14">
+                </div>
+
+                <div class="controls">
+                    <button class="nav-button" onclick="changeSlide(-1)" id="prevBtn">← Previous</button>
+                    <div class="slide-counter">
+                        <span id="currentSlide">1</span> / <span id="totalSlides">14</span>
+                    </div>
+                    <button class="nav-button" onclick="changeSlide(1)" id="nextBtn">Next →</button>
+                </div>
+
+                <div class="dots" id="dotsContainer"></div>
+
+                <div style="text-align: center;">
+                    <button class="autoplay-button" onclick="toggleAutoplay()" id="autoplayBtn">▶ Auto Play</button>
+                </div>
+            </div>
+
+            <section style="margin-top: 40px; text-align: center;">
+                <h2>Ready to Race?</h2>
+                <a href="/game">
+                    <button style="font-size: 12px; padding: 16px 32px; margin-top: 16px;">
+                        🎮 PLAY NOW 🎮
+                    </button>
+                </a>
+            </section>
+        </main>
+
+        <footer style="background: #ffffff; border: 2px solid #cccccc; margin-top: 24px; padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+                <a href="/game" style="color: #ff6b6b; text-decoration: none; font-size: 8px;">🎮 PLAY NOW</a>
+                <a href="/buy" style="color: #ff6b6b; text-decoration: none; font-size: 8px;">💰 BUY $PONY</a>
+                <a href="/story" style="color: #ff6b6b; text-decoration: none; font-size: 8px;">📖 THE STORY</a>
+                <a href="/whitepaper" style="color: #000000; text-decoration: none; font-size: 8px;">📄 WHITEPAPER</a>
+                <a href="/terms" style="color: #000000; text-decoration: none; font-size: 8px;">⚖️ TERMS</a>
+                <a href="/privacy" style="color: #000000; text-decoration: none; font-size: 8px;">🔒 PRIVACY</a>
+            </div>
+            <p style="font-size: 6px; color: #666666; line-height: 1.6;">
+                Pixel Ponies © 2025 | 16 Pixelated Ponies Racing On-Chain For No Reason<br>
+                Built on Base Network | Not financial advice | Play responsibly
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentSlideIndex = 0;
+        let autoplayInterval = null;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        // Initialize dots
+        const dotsContainer = document.getElementById('dotsContainer');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => goToSlide(i);
+            dotsContainer.appendChild(dot);
+        }
+
+        function showSlide(index) {
+            // Remove active class from all slides and dots
+            slides.forEach(slide => slide.classList.remove('active'));
+            document.querySelectorAll('.dot').forEach(dot => dot.classList.remove('active'));
+
+            // Add active class to current slide and dot
+            slides[index].classList.add('active');
+            document.querySelectorAll('.dot')[index].classList.add('active');
+
+            // Update counter
+            document.getElementById('currentSlide').textContent = index + 1;
+
+            // Update button states
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlideIndex += direction;
+            if (currentSlideIndex < 0) currentSlideIndex = 0;
+            if (currentSlideIndex >= totalSlides) currentSlideIndex = totalSlides - 1;
+            showSlide(currentSlideIndex);
+        }
+
+        function goToSlide(index) {
+            currentSlideIndex = index;
+            showSlide(currentSlideIndex);
+        }
+
+        function toggleAutoplay() {
+            const btn = document.getElementById('autoplayBtn');
+            if (autoplayInterval) {
+                // Stop autoplay
+                clearInterval(autoplayInterval);
+                autoplayInterval = null;
+                btn.textContent = '▶ Auto Play';
+                btn.classList.remove('playing');
+            } else {
+                // Start autoplay
+                autoplayInterval = setInterval(() => {
+                    if (currentSlideIndex < totalSlides - 1) {
+                        changeSlide(1);
+                    } else {
+                        currentSlideIndex = -1;
+                        changeSlide(1);
+                    }
+                }, 3000);
+                btn.textContent = '⏸ Pause';
+                btn.classList.add('playing');
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentSlideIndex > 0) {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight' && currentSlideIndex < totalSlides - 1) {
+                changeSlide(1);
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                toggleAutoplay();
+            }
+        });
+
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.querySelector('.slideshow-container').addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.querySelector('.slideshow-container').addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50 && currentSlideIndex < totalSlides - 1) {
+                changeSlide(1);
+            }
+            if (touchEndX > touchStartX + 50 && currentSlideIndex > 0) {
+                changeSlide(-1);
+            }
+        }
+
+        // Initialize
+        document.getElementById('totalSlides').textContent = totalSlides;
+        showSlide(0);
+    </script>
+</body>
+</html>
