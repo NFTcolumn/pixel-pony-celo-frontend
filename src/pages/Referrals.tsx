@@ -295,7 +295,7 @@ export default function Referrals() {
   const referredPlayerCount = playerCountData ? Number(playerCountData) : 0
 
   // Min claim amount
-  const minClaimAmount = minClaimAmountData ? parseFloat(formatEther(minClaimAmountData)).toFixed(4) : '0.0005'
+  const minClaimAmount = minClaimAmountData ? parseFloat(formatEther(minClaimAmountData)).toFixed(4) : '0.01'
 
   // Unpaid rewards (earned but not yet funded)
   const unpaidRewards = unpaidRewardsData
@@ -389,7 +389,7 @@ export default function Referrals() {
           <div className="rewards-card" style={{ marginBottom: '1rem' }}>
             <p className="rewards-label">💎 UNPAID REWARDS (Earned)</p>
             <p className="rewards-value">
-              {unpaidRewards} BNB
+              {unpaidRewards} CELO
             </p>
             <p className="rewards-info">
               ⏳ Waiting for contract funding
@@ -400,7 +400,7 @@ export default function Referrals() {
           <div className="rewards-card">
             <p className="rewards-label">✅ CLAIMABLE REWARDS (Funded)</p>
             <p className="rewards-value">
-              {pendingRewards} BNB
+              {pendingRewards} CELO
             </p>
             <p className="rewards-info">
               🏆 Current Commission: {commissionPercentage}% | Tier: {currentTierName}
@@ -418,7 +418,7 @@ export default function Referrals() {
                 ? 'CLAIMING...'
                 : canClaim
                 ? 'CLAIM REWARDS'
-                : `NEED MIN ${minClaimAmount} BNB TO CLAIM`
+                : `NEED MIN ${minClaimAmount} CELO TO CLAIM`
               }
             </button>
           </div>
@@ -429,7 +429,7 @@ export default function Referrals() {
           <h2>📋 HOW IT WORKS</h2>
           <ul style={{ textAlign: 'center', listStyle: 'none', padding: 0 }}>
             <li>Share your referral link with friends</li>
-            <li>🎯 Tiered Commissions (of 0.0005 BNB race fee):
+            <li>🎯 Tiered Commissions (of 0.01 CELO race fee):
               <ul style={{ marginTop: '0.5rem', listStyle: 'none', padding: 0 }}>
                 <li>Bronze (0-9 races): 5%</li>
                 <li>Silver (10-19 races): 10%</li>
@@ -440,7 +440,7 @@ export default function Referrals() {
               </ul>
             </li>
             <li>💎 Multi-Level: Earn 5% on sub-referrals (people your referrals bring)</li>
-            <li>Claim rewards when you reach min {minClaimAmount} BNB</li>
+            <li>Claim rewards when you reach min {minClaimAmount} CELO</li>
             <li>No limit on referrals - earn forever! 💰</li>
           </ul>
         </section>
@@ -459,15 +459,15 @@ export default function Referrals() {
             </div>
             <div className="stat-box">
               <p className="stat-box-label">PENDING REWARDS</p>
-              <p className="stat-box-value">{unpaidRewards} BNB</p>
+              <p className="stat-box-value">{unpaidRewards} CELO</p>
             </div>
             <div className="stat-box">
               <p className="stat-box-label">TOTAL EARNED</p>
-              <p className="stat-box-value">{trueTotalEarned} BNB</p>
+              <p className="stat-box-value">{trueTotalEarned} CELO</p>
             </div>
             <div className="stat-box">
               <p className="stat-box-label">TOTAL CLAIMED</p>
-              <p className="stat-box-value">{totalClaimed} BNB</p>
+              <p className="stat-box-value">{totalClaimed} CELO</p>
             </div>
             <div className="stat-box">
               <p className="stat-box-label">CAN CLAIM?</p>
@@ -540,11 +540,11 @@ export default function Referrals() {
             </div>
             <div className="stat-box">
               <p className="stat-box-label">TOTAL FUNDED</p>
-              <p className="stat-box-value">{totalRewardsFunded} BNB</p>
+              <p className="stat-box-value">{totalRewardsFunded} CELO</p>
             </div>
             <div className="stat-box">
               <p className="stat-box-label">TOTAL CLAIMED</p>
-              <p className="stat-box-value">{totalRewardsClaimed} BNB</p>
+              <p className="stat-box-value">{totalRewardsClaimed} CELO</p>
             </div>
           </div>
         </section>

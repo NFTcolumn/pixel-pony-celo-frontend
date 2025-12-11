@@ -6,14 +6,14 @@ export default function Whitepaper() {
       <div className="whitepaper-container">
         <h1>WHITEPAPER V1</h1>
         <p className="whitepaper-subtitle">
-          INSTANT 16-HORSE RACING ON BNB CHAIN
+          INSTANT 16-HORSE RACING ON CELO
         </p>
 
         {/* Abstract */}
         <section className="whitepaper-section">
           <h2>Abstract</h2>
           <p>
-            Pixel Pony introduces a straightforward, transparent gaming ecosystem that combines instant single-player horse racing with sustainable tokenomics. Built on BNB Smart Chain with security-hardened smart contracts, the protocol generates revenue through platform fees while protecting players and the ecosystem with an innovative pull-based jackpot failsafe system.
+            Pixel Pony introduces a straightforward, transparent gaming ecosystem that combines instant single-player horse racing with sustainable tokenomics. Built on Celo with security-hardened smart contracts, the protocol generates revenue through platform fees while protecting players and the ecosystem with an innovative pull-based jackpot failsafe system.
           </p>
         </section>
 
@@ -68,7 +68,7 @@ export default function Whitepaper() {
             <li>✅ <strong>Gas optimized</strong> - Efficient execution</li>
             <li>✅ <strong>Pull-based claims</strong> - Scalable failsafe system</li>
             <li>✅ <strong>Ownership renounceable</strong> - Can become fully immutable</li>
-            <li>✅ <strong>Transparent</strong> - Verified source code on BscScan</li>
+            <li>✅ <strong>Transparent</strong> - Verified source code on Blockscout</li>
           </ul>
         </section>
 
@@ -141,9 +141,9 @@ export default function Whitepaper() {
 
           <h3 style={{ margin: '16px 0 8px' }}>Network Deployment</h3>
           <ul>
-            <li><strong>BNB Smart Chain</strong> (Chain ID: 56)</li>
+            <li><strong>Celo</strong> (Chain ID: 42220)</li>
             <li><strong>EVM compatible:</strong> Standard Solidity</li>
-            <li><strong>Low gas costs:</strong> Optimized for BNB Chain</li>
+            <li><strong>Low gas costs:</strong> Optimized for Celo</li>
             <li><strong>Fast finality:</strong> Quick transaction confirmation</li>
           </ul>
         </section>
@@ -151,7 +151,7 @@ export default function Whitepaper() {
         {/* Mainnet Deployment */}
         <section className="whitepaper-section">
           <h2>6. Mainnet Deployment Info</h2>
-          <h3>BNB Smart Chain Contracts (LIVE)</h3>
+          <h3>Celo Contracts (LIVE)</h3>
 
           <div className="contract-box">
             <p><strong>PonyTokenV1 (PONY)</strong></p>
@@ -181,7 +181,7 @@ export default function Whitepaper() {
 
           <p><strong>Key Highlights:</strong></p>
           <ul>
-            <li>✅ Deployed on BNB Smart Chain</li>
+            <li>✅ Deployed on Celo</li>
             <li>✅ Zero security vulnerabilities</li>
             <li>✅ Verified source code</li>
             <li>✅ Pull-based failsafe (scalable to unlimited players)</li>

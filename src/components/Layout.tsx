@@ -14,12 +14,12 @@ export default function Layout() {
   // Auto-switch to Celo when wallet connects or chain changes
   useEffect(() => {
     if (isConnected && chain && chain.id !== celo.id) {
-      console.log(`Wrong chain detected: ${chain.id}, switching to BNB (${celo.id})...`)
+      console.log(`Wrong chain detected: ${chain.id}, switching to Celo (${celo.id})...`)
       switchChain({ chainId: celo.id })
     }
   }, [isConnected, chain, switchChain])
 
-  // Additional check on mount - force BNB if connected to wrong chain
+  // Additional check on mount - force Celo if connected to wrong chain
   useEffect(() => {
     if (isConnected && chain && chain.id !== celo.id) {
       console.log('Initial check: switching to Celo')
@@ -122,10 +122,10 @@ export default function Layout() {
           <div className="footer-section">
             <h4>Contracts</h4>
             <div className="contract-links">
-              <a href="https://bscscan.com/address/0xde2f957BF8B9459e9E998b98789Af02920404ad8" target="_blank" rel="noopener noreferrer">PONY Token</a>
-              <a href="https://bscscan.com/address/0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8" target="_blank" rel="noopener noreferrer">Game Contract</a>
-              <a href="https://bscscan.com/address/0x6ab297799335E7b0f60d9e05439Df156cf694Ba7" target="_blank" rel="noopener noreferrer">Vault</a>
-              <a href="https://bscscan.com/address/0x1AAEc9089CA654869BDE20E128fC421D14Dc1a4C" target="_blank" rel="noopener noreferrer">Referral Contract</a>
+              <a href="https://explorer.celo.org/mainnet/address/0xde2f957BF8B9459e9E998b98789Af02920404ad8" target="_blank" rel="noopener noreferrer">PONY Token</a>
+              <a href="https://explorer.celo.org/mainnet/address/0x6ab297799335E7b0f60d9e05439Df156cf694Ba7" target="_blank" rel="noopener noreferrer">Game Contract</a>
+              <a href="https://explorer.celo.org/mainnet/address/0x0A777DaB9527c1f85612E4EBd41bfB8677d4e10a" target="_blank" rel="noopener noreferrer">Vault</a>
+              <a href="https://explorer.celo.org/mainnet/address/0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8" target="_blank" rel="noopener noreferrer">Referral Contract</a>
             </div>
           </div>
         </div>

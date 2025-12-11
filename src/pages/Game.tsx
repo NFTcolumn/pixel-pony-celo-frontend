@@ -245,9 +245,9 @@ export default function Game() {
   const handleRace = async () => {
     if (selectedHorse === null || !selectedBet || !baseFee || isRacing) return
 
-    // Check if user has enough CELO (baseFee is 0.0005, gas on CELO is ~0.0001)
+    // Check if user has enough CELO (baseFee is 0.01, gas on CELO is ~0.0001)
     if (ethBalanceData && baseFee) {
-      const minimumRequired = (baseFee as bigint) + parseEther('0.0002') // 0.0005 baseFee + 0.0002 gas buffer (2x actual)
+      const minimumRequired = (baseFee as bigint) + parseEther('0.002') // 0.01 baseFee + 0.0002 gas buffer (2x actual)
       if (ethBalanceData.value < minimumRequired) {
         const needed = formatEther(minimumRequired)
         const have = formatEther(ethBalanceData.value)
@@ -301,7 +301,7 @@ export default function Game() {
 
       // Better error messages
       if (errorMsg.toLowerCase().includes('insufficient')) {
-        setStatusMessage('Insufficient CELO. Need ~0.0007 CELO total (0.0005 entry + gas).')
+        setStatusMessage('Insufficient CELO. Need ~0.015 CELO total (0.01 entry + gas).')
       } else if (errorMsg.toLowerCase().includes('user rejected')) {
         setStatusMessage('Transaction rejected')
       } else {
@@ -428,7 +428,7 @@ export default function Game() {
         }
 
         if (!receipt) {
-          throw new Error('Transaction receipt not found after waiting. Please check BscScan.')
+          throw new Error('Transaction receipt not found after waiting. Please check CeloScan.')
         }
 
         console.log('Transaction receipt:', receipt)

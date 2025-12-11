@@ -31,7 +31,7 @@ export default function Terms() {
             <li>Decentralized smart contract execution</li>
           </ul>
           <p style={{ fontSize: '8px', lineHeight: '1.8', marginTop: '12px' }}>
-            The Service operates on the BNB Smart Chain blockchain network and requires compatible wallet software for interaction.
+            The Service operates on the Celo blockchain network and requires compatible wallet software for interaction.
           </p>
         </section>
 
