@@ -6,8 +6,8 @@ import PIXEL_PONY_ABI_FULL from '../PixelPonyABI.json'
 import ReferralHandler from '../components/ReferralHandler'
 
 // Contract addresses
-const PIXEL_PONY_ADDRESS = '0x6ab297799335E7b0f60d9e05439Df156cf694Ba7'
-const PONY_TOKEN_ADDRESS = '0xde2f957BF8B9459e9E998b98789Af02920404ad8'
+const PIXEL_PONY_ADDRESS = '0x3e9b5F357326a399aff2988eC501E28C9DD9f3b9'
+const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
 
 // Use the full ABI from the verified contract
 const PIXEL_PONY_ABI = PIXEL_PONY_ABI_FULL
@@ -245,9 +245,9 @@ export default function Game() {
   const handleRace = async () => {
     if (selectedHorse === null || !selectedBet || !baseFee || isRacing) return
 
-    // Check if user has enough CELO (baseFee is 0.01, gas on CELO is ~0.0001)
+    // Check if user has enough CELO (baseFee is 1 CELO, gas on CELO is ~0.0001)
     if (ethBalanceData && baseFee) {
-      const minimumRequired = (baseFee as bigint) + parseEther('0.002') // 0.01 baseFee + 0.0002 gas buffer (2x actual)
+      const minimumRequired = (baseFee as bigint) + parseEther('0.002') // 1 CELO baseFee + 0.002 gas buffer
       if (ethBalanceData.value < minimumRequired) {
         const needed = formatEther(minimumRequired)
         const have = formatEther(ethBalanceData.value)
@@ -301,7 +301,7 @@ export default function Game() {
 
       // Better error messages
       if (errorMsg.toLowerCase().includes('insufficient')) {
-        setStatusMessage('Insufficient CELO. Need ~0.015 CELO total (0.01 entry + gas).')
+        setStatusMessage('Insufficient CELO. Need ~1.002 CELO total (1 CELO entry + gas).')
       } else if (errorMsg.toLowerCase().includes('user rejected')) {
         setStatusMessage('Transaction rejected')
       } else {

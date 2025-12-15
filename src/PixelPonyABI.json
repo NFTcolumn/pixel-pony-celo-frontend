@@ -56,25 +56,44 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "player",
-        "type": "address"
-      },
-      {
         "indexed": false,
         "internalType": "uint256",
-        "name": "devAmount",
+        "name": "oldFee",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "marketingAmount",
+        "name": "newFee",
         "type": "uint256"
       }
     ],
-    "name": "EthFeesDistributed",
+    "name": "BaseFeeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "racesImported",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "ticketsImported",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playersImported",
+        "type": "uint256"
+      }
+    ],
+    "name": "DataMigratedFromV1",
     "type": "event"
   },
   {
@@ -202,6 +221,31 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "devAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "marketingAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "NativeFeesDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -256,6 +300,19 @@
       }
     ],
     "name": "RaceExecuted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "v1Contract",
+        "type": "address"
+      }
+    ],
+    "name": "V1ContractSet",
     "type": "event"
   },
   {
@@ -339,6 +396,19 @@
   {
     "inputs": [],
     "name": "MAX_BET",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FEE_AMOUNT",
     "outputs": [
       {
         "internalType": "uint256",
@@ -630,6 +700,54 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getMigrationProgress",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "racesImported",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "v1TotalRaces",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ticketsImported",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "v1TotalTickets",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "playersImported",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "v1TotalPlayers",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "snapshotsImported",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "v1TotalSnapshots",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -766,6 +884,111 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_batchSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "migrateAllPlayers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "migrateGameState",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_startTicketId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_count",
+        "type": "uint256"
+      }
+    ],
+    "name": "migrateLotteryTickets",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_players",
+        "type": "address[]"
+      }
+    ],
+    "name": "migratePlayers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_startRaceId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_count",
+        "type": "uint256"
+      }
+    ],
+    "name": "migrateRaces",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_snapshotId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_players",
+        "type": "address[]"
+      }
+    ],
+    "name": "migrateSnapshotPlayers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_snapshotIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "migrateSnapshots",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -876,7 +1099,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "ethFee",
+        "name": "nativeFee",
         "type": "uint256"
       },
       {
@@ -927,6 +1150,19 @@
       }
     ],
     "name": "setGameSupply",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_v1Contract",
+        "type": "address"
+      }
+    ],
+    "name": "setV1Contract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1094,6 +1330,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "v1Contract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

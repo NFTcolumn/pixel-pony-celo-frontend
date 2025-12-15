@@ -13,14 +13,14 @@ export default function Buy() {
           <div className="token-address-box">
             <h3>Token Address</h3>
             <code>
-              0xde2f957BF8B9459e9E998b98789Af02920404ad8
+              0x000BE46901ea6f7ac2c1418D158f2f0A80992c07
             </code>
           </div>
 
           <h3 className="buy-links-title">Where to Buy</h3>
           <div className="buy-links">
             <a
-              href="https://app.ubeswap.org/#/swap?outputCurrency=0xde2f957BF8B9459e9E998b98789Af02920404ad8"
+              href="https://app.ubeswap.org/#/swap?outputCurrency=0x000BE46901ea6f7ac2c1418D158f2f0A80992c07"
               target="_blank"
               rel="noopener noreferrer"
               className="buy-link primary"
@@ -28,7 +28,7 @@ export default function Buy() {
               Buy on Ubeswap
             </a>
             <a
-              href="https://dexscreener.com/celo/0xde2f957BF8B9459e9E998b98789Af02920404ad8"
+              href="https://dexscreener.com/celo/0x000BE46901ea6f7ac2c1418D158f2f0A80992c07"
               target="_blank"
               rel="noopener noreferrer"
               className="buy-link secondary"

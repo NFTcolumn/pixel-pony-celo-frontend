@@ -92,7 +92,7 @@ export default function Whitepaper() {
             <li><strong>Game Operations:</strong> Sustainable gameplay</li>
           </ul>
 
-          <h3 style={{ margin: '16px 0 8px' }}>CELO Entry Fees (0.01 CELO per bet)</h3>
+          <h3 style={{ margin: '16px 0 8px' }}>CELO Entry Fees (1 CELO per bet)</h3>
           <ul>
             <li><strong>Dev Wallet:</strong> 50% of CELO fees</li>
             <li><strong>Marketing Wallet:</strong> 50% of CELO fees</li>
@@ -156,19 +156,27 @@ export default function Whitepaper() {
           <div className="contract-box">
             <p><strong>PonyTokenV1 (PONY)</strong></p>
             <p className="contract-address">
-              Address: 0xde2f957BF8B9459e9E998b98789Af02920404ad8
+              Address: 0x000BE46901ea6f7ac2c1418D158f2f0A80992c07
             </p>
             <p>Status: ✅ Deployed & Verified</p>
             <p>Total Supply: 100,000,000,000,000 PONY (100 Trillion)</p>
           </div>
 
           <div className="contract-box">
-            <p><strong>PixelPonyV1 (Racing Game)</strong></p>
+            <p><strong>PixelPonyV2 (Racing Game)</strong></p>
             <p className="contract-address">
-              Address: 0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8
+              Address: 0x3e9b5F357326a399aff2988eC501E28C9DD9f3b9
             </p>
             <p>Status: ✅ Deployed & Verified</p>
             <p>Game Reserve: 50,000,000,000,000 PONY (50 Trillion)</p>
+          </div>
+
+          <div className="contract-box">
+            <p><strong>Referral Contract</strong></p>
+            <p className="contract-address">
+              Address: 0xFF5987F04850c092C2Af855894fBF1679610Df23
+            </p>
+            <p>Status: ✅ Deployed & Verified</p>
           </div>
         </section>
 

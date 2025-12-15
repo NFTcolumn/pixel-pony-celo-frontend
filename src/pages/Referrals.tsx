@@ -4,7 +4,7 @@ import { formatEther, isAddress } from 'viem'
 import { useSearchParams } from 'react-router-dom'
 import './Referrals.css'
 
-const REFERRAL_ADDRESS = '0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8'
+const REFERRAL_ADDRESS = '0xFF5987F04850c092C2Af855894fBF1679610Df23'
 
 const REFERRAL_ABI = [
   {
@@ -429,7 +429,7 @@ export default function Referrals() {
           <h2>📋 HOW IT WORKS</h2>
           <ul style={{ textAlign: 'center', listStyle: 'none', padding: 0 }}>
             <li>Share your referral link with friends</li>
-            <li>🎯 Tiered Commissions (of 0.01 CELO race fee):
+            <li>🎯 Tiered Commissions (of 1 CELO race fee):
               <ul style={{ marginTop: '0.5rem', listStyle: 'none', padding: 0 }}>
                 <li>Bronze (0-9 races): 5%</li>
                 <li>Silver (10-19 races): 10%</li>

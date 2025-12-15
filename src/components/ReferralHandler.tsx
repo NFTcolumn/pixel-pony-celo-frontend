@@ -3,7 +3,7 @@ import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { isAddress } from 'viem'
 import { useSearchParams } from 'react-router-dom'
 
-const REFERRAL_ADDRESS = '0x2B4652Bd6149E407E3F57190E25cdBa1FC9d37d8'
+const REFERRAL_ADDRESS = '0xFF5987F04850c092C2Af855894fBF1679610Df23'
 
 const REFERRAL_ABI = [
   {
