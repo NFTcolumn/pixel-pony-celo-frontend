@@ -234,9 +234,9 @@ export default function PVP() {
 
   const getAvailableHorses = () => {
     if (!matchData) return Array.from({length: 16}, (_, i) => i)
-    const creatorHorses = matchData[6] || []
-    const opponentHorses = matchData[7] || []
-    const takenHorses = [...creatorHorses, ...opponentHorses].map(h => Number(h))
+    const creatorHorses = (matchData as any)[6] || []
+    const opponentHorses = (matchData as any)[7] || []
+    const takenHorses = [...creatorHorses, ...opponentHorses].map((h: any) => Number(h))
     return Array.from({length: 16}, (_, i) => i).filter(h => !takenHorses.includes(h))
   }
 
@@ -548,11 +548,11 @@ export default function PVP() {
       </button>
 
       {/* My Matches Section */}
-      {currentView === 'main' && userMatches && userMatches.length > 0 && (
+      {currentView === 'main' && userMatches && Array.isArray(userMatches) && userMatches.length > 0 ? (
         <div className="bet-section">
           <div className="bet-label">MY MATCHES ({userMatches.length})</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {userMatches.map((mid: string) => (
+            {(userMatches as string[]).map((mid: string) => (
               <button
                 key={mid}
                 onClick={() => handleViewMatch(mid)}
@@ -564,10 +564,10 @@ export default function PVP() {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Match Viewing Interface */}
-      {currentView === 'match' && matchData && (
+      {currentView === 'match' && matchData ? (
         <>
           <button
             className="back-btn"
@@ -588,34 +588,34 @@ export default function PVP() {
             </div>
             <div className="info-row">
               <span>State:</span>
-              <span>{formatMatchState(Number(matchData[5]))}</span>
+              <span>{formatMatchState(Number((matchData as any)[5]))}</span>
             </div>
             <div className="info-row">
               <span>Creator:</span>
-              <span style={{ fontSize: '8px' }}>{matchData[0].slice(0, 6)}...{matchData[0].slice(-4)}</span>
+              <span style={{ fontSize: '8px' }}>{String((matchData as any)[0]).slice(0, 6)}...{String((matchData as any)[0]).slice(-4)}</span>
             </div>
-            {matchData[1] !== '0x0000000000000000000000000000000000000000' && (
+            {(matchData as any)[1] !== '0x0000000000000000000000000000000000000000' && (
               <div className="info-row">
                 <span>Opponent:</span>
-                <span style={{ fontSize: '8px' }}>{matchData[1].slice(0, 6)}...{matchData[1].slice(-4)}</span>
+                <span style={{ fontSize: '8px' }}>{String((matchData as any)[1]).slice(0, 6)}...{String((matchData as any)[1]).slice(-4)}</span>
               </div>
             )}
             <div className="info-row">
               <span>Bet Amount:</span>
-              <span>{matchData[4] ? formatPony(formatEther(matchData[3])) : '0'} tokens</span>
+              <span>{(matchData as any)[4] ? formatPony(formatEther((matchData as any)[3])) : '0'} tokens</span>
             </div>
-            {Number(matchData[5]) === 1 && currentPicker && (
+            {Number((matchData as any)[5]) === 1 && currentPicker ? (
               <div className="info-row">
                 <span>Current Turn:</span>
                 <span style={{ fontSize: '8px', color: currentPicker === address ? '#4ade80' : '#ff6b6b' }}>
                   {currentPicker === address ? 'YOUR TURN' : 'OPPONENT'}
                 </span>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Horse Selection Interface - only show if state is Active (1) */}
-          {Number(matchData[5]) === 1 && currentPicker === address && (
+          {Number((matchData as any)[5]) === 1 && currentPicker === address && (
             <>
               <div className="selection-info">
                 SELECT 4 HORSES ({selectedHorses.length}/4 selected)
@@ -651,14 +651,14 @@ export default function PVP() {
           )}
 
           {/* Show selected horses for both players */}
-          {(matchData[6].length > 0 || matchData[7].length > 0) && (
+          {(((matchData as any)[6]?.length > 0) || ((matchData as any)[7]?.length > 0)) && (
             <div className="bet-section">
               <div className="bet-label">SELECTED HORSES</div>
-              {matchData[6].length > 0 && (
+              {(matchData as any)[6]?.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
                   <div style={{ fontSize: '9px', marginBottom: '5px', color: '#4ade80' }}>Creator's Horses:</div>
                   <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                    {matchData[6].map((h: any) => (
+                    {(matchData as any)[6].map((h: any) => (
                       <span key={Number(h)} style={{ fontSize: '10px', padding: '5px 10px', background: '#f0fdf4', borderRadius: '5px', border: '1px solid #4ade80' }}>
                         #{Number(h)}
                       </span>
@@ -666,11 +666,11 @@ export default function PVP() {
                   </div>
                 </div>
               )}
-              {matchData[7].length > 0 && (
+              {(matchData as any)[7]?.length > 0 && (
                 <div>
                   <div style={{ fontSize: '9px', marginBottom: '5px', color: '#f87171' }}>Opponent's Horses:</div>
                   <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                    {matchData[7].map((h: any) => (
+                    {(matchData as any)[7].map((h: any) => (
                       <span key={Number(h)} style={{ fontSize: '10px', padding: '5px 10px', background: '#fef2f2', borderRadius: '5px', border: '1px solid #f87171' }}>
                         #{Number(h)}
                       </span>
@@ -682,34 +682,34 @@ export default function PVP() {
           )}
 
           {/* Execute Race Button - only show if state is ReadyToRace (2) */}
-          {Number(matchData[5]) === 2 && (
+          {Number((matchData as any)[5]) === 2 && (
             <button className="race-btn" onClick={handleExecuteRace}>
               EXECUTE RACE 🏁
             </button>
           )}
 
           {/* Race Results - only show if state is Completed (3) */}
-          {Number(matchData[5]) === 3 && matchData[9] && (
+          {Number((matchData as any)[5]) === 3 && (matchData as any)[9] && (
             <div className="results-section">
               <h3>RACE RESULTS</h3>
               <div className="winners-list">
                 <div className="winner-item">
                   <span>🥇 1st Place:</span>
-                  <span>Horse #{Number(matchData[9][0])}</span>
+                  <span>Horse #{Number((matchData as any)[9][0])}</span>
                 </div>
                 <div className="winner-item">
                   <span>🥈 2nd Place:</span>
-                  <span>Horse #{Number(matchData[9][1])}</span>
+                  <span>Horse #{Number((matchData as any)[9][1])}</span>
                 </div>
                 <div className="winner-item">
                   <span>🥉 3rd Place:</span>
-                  <span>Horse #{Number(matchData[9][2])}</span>
+                  <span>Horse #{Number((matchData as any)[9][2])}</span>
                 </div>
               </div>
             </div>
           )}
         </>
-      )}
+      ) : null}
     </div>
   )
 }
