@@ -42,6 +42,7 @@ export default function Layout() {
           <nav className="main-nav">
             <Link to="/">Home</Link>
             <Link to="/game">Game</Link>
+            <Link to="/pvp">PVP</Link>
             <Link to="/referrals">Referrals</Link>
             <Link to="/story">Story</Link>
             <Link to="/whitepaper">Whitepaper</Link>
@@ -124,6 +125,7 @@ export default function Layout() {
             <div className="contract-links">
               <a href="https://explorer.celo.org/mainnet/address/0x000BE46901ea6f7ac2c1418D158f2f0A80992c07" target="_blank" rel="noopener noreferrer">PONY Token</a>
               <a href="https://explorer.celo.org/mainnet/address/0x3e9b5F357326a399aff2988eC501E28C9DD9f3b9" target="_blank" rel="noopener noreferrer">Game Contract</a>
+              <a href="https://celoscan.io/address/0x5377EA69528665c23a0213D49cC79332CF8B8d22" target="_blank" rel="noopener noreferrer">PVP Contract</a>
               <a href="https://explorer.celo.org/mainnet/address/0x0A777DaB9527c1f85612E4EBd41bfB8677d4e10a" target="_blank" rel="noopener noreferrer">Vault</a>
               <a href="https://explorer.celo.org/mainnet/address/0xFF5987F04850c092C2Af855894fBF1679610Df23" target="_blank" rel="noopener noreferrer">Referral Contract</a>
             </div>
