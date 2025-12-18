@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { useState, useEffect } from 'react'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import '../PVP.css'
 import PONYPVP_ABI from '../PonyPvPABI.json'
 
-const PONYPVP_ADDRESS = '0x5377EA69528665c23a0213D49cC79332CF8B8d22'
+const PONYPVP_ADDRESS = '0x739331647Fa2dBefe2c7A2E453A26Ee9f4a9965A'
 const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
 
 const PONY_TOKEN_ABI = [
@@ -24,6 +24,16 @@ const PONY_TOKEN_ABI = [
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
     type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
   }
 ] as const
 
@@ -38,7 +48,9 @@ function formatPony(num: string): string {
 
 export default function PVP() {
   const { address, isConnected } = useAccount()
-  const { writeContract } = useWriteContract()
+  const { writeContract, data: hash, reset: resetWrite } = useWriteContract()
+  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+  const publicClient = usePublicClient()
 
   const [statusMessage, setStatusMessage] = useState('Player vs Player Racing')
   const [selectedBet, setSelectedBet] = useState<bigint | null>(null)
@@ -46,13 +58,18 @@ export default function PVP() {
   const [currentView, setCurrentView] = useState<'main' | 'match'>('main')
   const [viewingMatchId, setViewingMatchId] = useState<string>('')
   const [selectedHorses, setSelectedHorses] = useState<number[]>([])
+  const [isApproved, setIsApproved] = useState(false)
+  const [approvalHash, setApprovalHash] = useState<`0x${string}` | null>(null)
+  const [isApprovingToken, setIsApprovingToken] = useState(false)
+  const [createdMatchId, setCreatedMatchId] = useState<string | null>(null)
+  const [isCreatingMatch, setIsCreatingMatch] = useState(false)
 
   // Token selection
   const [tokenType, setTokenType] = useState<'erc20' | 'nft'>('erc20')
   const [customToken, setCustomToken] = useState('')
   const [useCustomToken, setUseCustomToken] = useState(false)
   const [nftTokenId, setNftTokenId] = useState('')
-  const [betInputValue, setBetInputValue] = useState('100000000') // Default 100M
+  const [betInputValue, setBetInputValue] = useState('0') // Default 0
 
   // Read PONY balance
   const { data: ponyBalanceData } = useReadContract({
@@ -73,6 +90,16 @@ export default function PVP() {
     query: {
       enabled: !!address && (useCustomToken ? !!customToken : true)
     }
+  })
+
+  // Read allowance for token approval
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: (useCustomToken && customToken ? customToken : PONY_TOKEN_ADDRESS) as `0x${string}`,
+    abi: PONY_TOKEN_ABI,
+    functionName: 'allowance',
+    args: address && selectedBet ? [address, PONYPVP_ADDRESS] : undefined,
+    chainId: 42220,
+    query: { enabled: !!address && selectedBet !== null && tokenType === 'erc20' }
   })
 
   // Read entry fee
@@ -112,6 +139,165 @@ export default function PVP() {
 
   const ponyBalance = ponyBalanceData ? formatPony(formatEther(ponyBalanceData)) : '0'
 
+  // Check URL parameters for match ID on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const matchParam = urlParams.get('match')
+    if (matchParam) {
+      setMatchId(matchParam)
+      setStatusMessage(`Match ${matchParam.slice(0, 10)}... loaded! Review and click JOIN MATCH.`)
+    }
+  }, [])
+
+  // Check if approved whenever allowance or selectedBet changes
+  useEffect(() => {
+    if (allowance && selectedBet && tokenType === 'erc20') {
+      const approved = allowance >= selectedBet
+      setIsApproved(approved)
+
+      // Update status message based on approval state
+      if (approved && !isApprovingToken) {
+        const betDisplay = formatPony(formatEther(selectedBet))
+        const tokenName = useCustomToken ? 'tokens' : 'PONY'
+        setStatusMessage(`✅ Approved! ${betDisplay} ${tokenName} ready. Click STEP 2 to create match!`)
+      } else if (selectedBet !== null && !isApprovingToken) {
+        const betDisplay = formatPony(formatEther(selectedBet))
+        const tokenName = useCustomToken ? 'tokens' : 'PONY'
+        setStatusMessage(`Ready! ${betDisplay} ${tokenName} bet. Click STEP 1 to approve!`)
+      }
+    } else if (tokenType === 'nft') {
+      setIsApproved(true) // NFT doesn't need this approval step
+    } else {
+      setIsApproved(false)
+    }
+  }, [allowance, selectedBet, tokenType, useCustomToken, isApprovingToken])
+
+  // Track approval transaction
+  useEffect(() => {
+    if (hash && isApprovingToken && !approvalHash) {
+      console.log('Tracking approval hash:', hash)
+      setApprovalHash(hash)
+      setStatusMessage('Approval transaction sent! Waiting for confirmation...')
+    }
+  }, [hash, isApprovingToken, approvalHash])
+
+  // Handle approval confirmation with polling
+  useEffect(() => {
+    if (!approvalHash || !isConfirmed || approvalHash !== hash) return
+
+    console.log('Approval confirmed! Refetching allowance...')
+    setStatusMessage('Approval confirmed! Checking allowance...')
+
+    const checkAllowance = async () => {
+      // More aggressive polling: 25 attempts with shorter delays
+      for (let i = 0; i < 25; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setStatusMessage(`Verifying approval... (${i + 1}/25)`)
+        const result = await refetchAllowance()
+        console.log(`Checking allowance... attempt ${i + 1}/25, result:`, result.data?.toString())
+        if (result.data && selectedBet && result.data >= selectedBet) {
+          console.log('Allowance detected! Ready to create match!')
+          const betDisplay = formatPony(formatEther(selectedBet))
+          const tokenName = useCustomToken ? 'tokens' : 'PONY'
+          setStatusMessage(`✅ Approved! ${betDisplay} ${tokenName} ready. Click STEP 2 to create match!`)
+          setApprovalHash(null)
+          setIsApprovingToken(false)
+          resetWrite() // Clear the transaction state
+          // Force one more refetch after small delay to ensure hook updates
+          setTimeout(() => refetchAllowance(), 100)
+          return
+        }
+      }
+      console.log('Approval polling completed but not detected yet')
+      setStatusMessage('Approval on-chain. Refresh page or try STEP 2 now.')
+      setApprovalHash(null)
+      setIsApprovingToken(false)
+      resetWrite()
+      // Force a final refetch
+      refetchAllowance()
+    }
+
+    checkAllowance()
+  }, [approvalHash, isConfirmed, hash, refetchAllowance, selectedBet, resetWrite, useCustomToken])
+
+  // Handle match creation confirmation
+  useEffect(() => {
+    const handleMatchCreated = async () => {
+      if (!isConfirmed || !hash || !publicClient || !isCreatingMatch) return
+
+      try {
+        console.log('Match creation confirmed! Getting transaction receipt...')
+        setStatusMessage('Match created! Getting match details...')
+
+        // Wait a moment for blockchain state to update
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Refetch matches first to get the latest list
+        const result = await refetchMatches()
+        console.log('Refetched matches:', result.data)
+
+        // Get the most recent match (should be the one just created)
+        if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+          const latestMatchId = result.data[result.data.length - 1] as string
+          console.log('Latest match ID:', latestMatchId)
+          setCreatedMatchId(latestMatchId)
+
+          const shareUrl = `${window.location.origin}/pvp?match=${latestMatchId}`
+          setStatusMessage(`Match created! Share this link: ${shareUrl}`)
+        } else {
+          // Fallback: try to decode from logs
+          const receipt = await publicClient.getTransactionReceipt({ hash })
+
+          if (receipt.status === 'success') {
+            const matchLogs = receipt.logs.filter((log: any) =>
+              log.address.toLowerCase() === PONYPVP_ADDRESS.toLowerCase()
+            )
+
+            console.log('Found match logs:', matchLogs)
+
+            const { decodeEventLog } = await import('viem')
+
+            for (const log of matchLogs) {
+              try {
+                const decodedLog = decodeEventLog({
+                  abi: PONYPVP_ABI,
+                  data: log.data,
+                  topics: log.topics,
+                  strict: false
+                })
+
+                console.log('Decoded log:', decodedLog)
+
+                if (decodedLog.eventName === 'MatchCreated') {
+                  const matchId = (decodedLog.args as any).matchId as string
+                  console.log('Match created with ID from event:', matchId)
+                  setCreatedMatchId(matchId)
+
+                  const shareUrl = `${window.location.origin}/pvp?match=${matchId}`
+                  setStatusMessage(`Match created! Share this link: ${shareUrl}`)
+                  break
+                }
+              } catch (err) {
+                console.log('Could not decode log:', err)
+              }
+            }
+          }
+        }
+
+        setIsCreatingMatch(false)
+        resetWrite()
+      } catch (error) {
+        console.error('Error getting match details:', error)
+        setStatusMessage('Match created! Check "My Matches" below.')
+        setIsCreatingMatch(false)
+        refetchMatches()
+        resetWrite()
+      }
+    }
+
+    handleMatchCreated()
+  }, [isConfirmed, hash, publicClient, isCreatingMatch, refetchMatches, resetWrite])
+
   // Get max bet based on user's wallet balance
   const getMaxBet = () => {
     const balanceData = useCustomToken ? customTokenBalanceData : ponyBalanceData
@@ -144,6 +330,8 @@ export default function PVP() {
       setBetInputValue(value)
       if (value !== '') {
         setSelectedBet(parseEther(value))
+        setIsApproved(false) // Reset approval when bet changes
+        setIsApprovingToken(false) // Reset approving state
       }
     }
   }
@@ -162,6 +350,8 @@ export default function PVP() {
       setBetInputValue(newValue)
       setSelectedBet(parseEther(newValue))
     }
+    setIsApproved(false) // Reset approval when bet changes
+    setIsApprovingToken(false) // Reset approving state
   }
 
   const handleApprove = async () => {
@@ -173,6 +363,8 @@ export default function PVP() {
     try {
       const tokenAddress = getTokenAddress()
       setStatusMessage('Approving tokens...')
+      setIsApprovingToken(true)
+      setApprovalHash(null)
       await writeContract({
         address: tokenAddress as `0x${string}`,
         abi: PONY_TOKEN_ABI,
@@ -180,9 +372,9 @@ export default function PVP() {
         args: [PONYPVP_ADDRESS, selectedBet],
         chainId: 42220
       })
-      setStatusMessage('Approved! Now create your match.')
     } catch (error) {
       setStatusMessage('Approval failed')
+      setIsApprovingToken(false)
     }
   }
 
@@ -205,6 +397,9 @@ export default function PVP() {
 
     try {
       setStatusMessage('Creating match...')
+      setIsCreatingMatch(true)
+      setCreatedMatchId(null)
+
       const tokenAddress = getTokenAddress()
       const isNFT = tokenType === 'nft'
       const betAmount = isNFT ? BigInt(0) : selectedBet!
@@ -218,11 +413,10 @@ export default function PVP() {
         value: entryFee as bigint,
         chainId: 42220
       })
-      setStatusMessage('Match created! Check "My Matches" below.')
-      // Refetch matches
-      refetchMatches()
+      setStatusMessage('Match transaction sent! Waiting for confirmation...')
     } catch (error) {
       setStatusMessage('Failed to create match')
+      setIsCreatingMatch(false)
     }
   }
 
@@ -518,11 +712,21 @@ export default function PVP() {
             </div>
           </div>
 
-          <button className="race-btn" onClick={handleApprove} disabled={!selectedBet}>
-            STEP 1: APPROVE {useCustomToken ? 'TOKEN' : 'PONY'}
+          <button
+            className="race-btn"
+            onClick={handleApprove}
+            disabled={!selectedBet || isApproved}
+            style={{ opacity: (!selectedBet || isApproved) ? 0.5 : 1 }}
+          >
+            {isApproved ? '✅ APPROVED!' : `STEP 1: APPROVE ${useCustomToken ? 'TOKEN' : 'PONY'}`}
           </button>
 
-          <button className="race-btn" onClick={handleCreateMatch}>
+          <button
+            className="race-btn"
+            onClick={handleCreateMatch}
+            disabled={!isApproved}
+            style={{ opacity: !isApproved ? 0.5 : 1 }}
+          >
             STEP 2: CREATE MATCH
           </button>
         </>
@@ -546,6 +750,33 @@ export default function PVP() {
       <button className="race-btn" onClick={handleJoinMatch} disabled={!matchId}>
         JOIN MATCH
       </button>
+
+      {/* Share Match Section */}
+      {createdMatchId && (
+        <div className="share-section">
+          <div className="share-label">🎉 MATCH CREATED! SHARE THIS LINK:</div>
+          <div className="share-link-box">
+            <input
+              type="text"
+              value={`${window.location.origin}/pvp?match=${createdMatchId}`}
+              readOnly
+              onClick={(e) => {
+                e.currentTarget.select()
+                navigator.clipboard.writeText(e.currentTarget.value)
+                setStatusMessage('Link copied to clipboard!')
+              }}
+              className="share-input"
+            />
+          </div>
+          <button
+            className="race-btn"
+            onClick={() => handleViewMatch(createdMatchId)}
+            style={{ marginTop: '10px', fontSize: '11px' }}
+          >
+            VIEW YOUR MATCH
+          </button>
+        </div>
+      )}
 
       {/* My Matches Section */}
       {currentView === 'main' && userMatches && Array.isArray(userMatches) && userMatches.length > 0 ? (
@@ -602,7 +833,12 @@ export default function PVP() {
             )}
             <div className="info-row">
               <span>Bet Amount:</span>
-              <span>{(matchData as any)[4] ? formatPony(formatEther((matchData as any)[3])) : '0'} tokens</span>
+              <span>
+                {(matchData as any)[4]
+                  ? `NFT Token ID: ${(matchData as any)[8]?.toString() || 'N/A'}`
+                  : `${formatPony(formatEther((matchData as any)[3]))} tokens`
+                }
+              </span>
             </div>
             {Number((matchData as any)[5]) === 1 && currentPicker ? (
               <div className="info-row">
@@ -613,6 +849,25 @@ export default function PVP() {
               </div>
             ) : null}
           </div>
+
+          {/* Share/Invite Button - Show when match is waiting for opponent or during horse selection */}
+          {(Number((matchData as any)[5]) === 0 || Number((matchData as any)[5]) === 1) && (
+            <button
+              className="race-btn"
+              onClick={() => {
+                const shareUrl = `${window.location.origin}/pvp?match=${viewingMatchId}`
+                navigator.clipboard.writeText(shareUrl)
+                setStatusMessage('Invite link copied to clipboard! Share it with your opponent.')
+              }}
+              style={{
+                background: '#fbbf24',
+                borderColor: '#f59e0b',
+                marginBottom: '15px'
+              }}
+            >
+              📋 COPY INVITE LINK
+            </button>
+          )}
 
           {/* Horse Selection Interface - only show if state is Active (1) */}
           {Number((matchData as any)[5]) === 1 && currentPicker === address && (
