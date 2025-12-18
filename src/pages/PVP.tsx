@@ -63,6 +63,7 @@ export default function PVP() {
   const [isApprovingToken, setIsApprovingToken] = useState(false)
   const [createdMatchId, setCreatedMatchId] = useState<string | null>(null)
   const [isCreatingMatch, setIsCreatingMatch] = useState(false)
+  const [isJoiningViaLink, setIsJoiningViaLink] = useState(false)
 
   // Token selection
   const [tokenType, setTokenType] = useState<'erc20' | 'nft'>('erc20')
@@ -139,15 +140,52 @@ export default function PVP() {
 
   const ponyBalance = ponyBalanceData ? formatPony(formatEther(ponyBalanceData)) : '0'
 
-  // Check URL parameters for match ID on mount
+  // Check URL parameters for match ID on mount and auto-view
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const matchParam = urlParams.get('match')
     if (matchParam) {
       setMatchId(matchParam)
-      setStatusMessage(`Match ${matchParam.slice(0, 10)}... loaded! Review and click JOIN MATCH.`)
+      setViewingMatchId(matchParam)
+      setCurrentView('match')
+      setIsJoiningViaLink(true)
+      setStatusMessage(`Loading match details...`)
     }
   }, [])
+
+  // Auto-fill bet amount and token info when viewing match via link
+  useEffect(() => {
+    if (isJoiningViaLink && matchData && viewingMatchId) {
+      const isNFT = (matchData as any)[4]
+      const betAmount = (matchData as any)[3]
+      const tokenAddress = (matchData as any)[2]
+      const matchState = Number((matchData as any)[5])
+
+      // Only auto-fill if match is waiting for opponent (state 0)
+      if (matchState === 0) {
+        if (isNFT) {
+          setTokenType('nft')
+          const nftTokenIdFromMatch = (matchData as any)[8]?.toString() || ''
+          setStatusMessage(`Match found! This is an NFT match. Token ID: ${nftTokenIdFromMatch}. Click JOIN MATCH to participate.`)
+        } else {
+          setTokenType('erc20')
+          setSelectedBet(betAmount)
+          setBetInputValue(formatEther(betAmount))
+
+          // Check if custom token
+          if (tokenAddress.toLowerCase() !== PONY_TOKEN_ADDRESS.toLowerCase()) {
+            setUseCustomToken(true)
+            setCustomToken(tokenAddress)
+          }
+
+          const betDisplay = formatPony(formatEther(betAmount))
+          setStatusMessage(`Match found! Bet: ${betDisplay} tokens. Review details and join!`)
+        }
+      } else {
+        setStatusMessage(`This match is already in progress or completed.`)
+      }
+    }
+  }, [isJoiningViaLink, matchData, viewingMatchId])
 
   // Check if approved whenever allowance or selectedBet changes
   useEffect(() => {
@@ -851,7 +889,7 @@ export default function PVP() {
           </div>
 
           {/* Share/Invite Button - Show when match is waiting for opponent or during horse selection */}
-          {(Number((matchData as any)[5]) === 0 || Number((matchData as any)[5]) === 1) && (
+          {(Number((matchData as any)[5]) === 0 || Number((matchData as any)[5]) === 1) && !isJoiningViaLink && (
             <button
               className="race-btn"
               onClick={() => {
@@ -867,6 +905,56 @@ export default function PVP() {
             >
               📋 COPY INVITE LINK
             </button>
+          )}
+
+          {/* Join Interface for users arriving via link - Show only if waiting for opponent (state 0) */}
+          {isJoiningViaLink && Number((matchData as any)[5]) === 0 && (matchData as any)[0].toLowerCase() !== address?.toLowerCase() && (
+            <div className="bet-section" style={{ background: '#fffbeb', border: '2px solid #fbbf24' }}>
+              <div className="bet-label" style={{ color: '#92400e' }}>🎮 JOIN THIS MATCH</div>
+              <div style={{ padding: '15px', fontSize: '10px', textAlign: 'center', marginBottom: '15px', color: '#78350f' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Entry Fee:</strong> {entryFee ? formatEther(entryFee as bigint) : '0.001'} CELO
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong>Bet Amount:</strong> {(matchData as any)[4]
+                    ? `NFT (Token ID: ${(matchData as any)[8]?.toString() || 'N/A'})`
+                    : `${formatPony(formatEther((matchData as any)[3]))} tokens`
+                  }
+                </div>
+                <div style={{ fontSize: '8px', color: '#92400e', marginTop: '10px' }}>
+                  Click below to approve and join this match!
+                </div>
+              </div>
+
+              {/* For ERC20 matches, show approve button if not approved */}
+              {!(matchData as any)[4] && !isApproved && (
+                <button
+                  className="race-btn"
+                  onClick={handleApprove}
+                  disabled={!selectedBet || isApproved}
+                  style={{
+                    opacity: (!selectedBet || isApproved) ? 0.5 : 1,
+                    marginBottom: '10px'
+                  }}
+                >
+                  {isApproved ? '✅ APPROVED!' : 'STEP 1: APPROVE TOKENS'}
+                </button>
+              )}
+
+              {/* Join button - enabled when approved (for ERC20) or immediately (for NFT) */}
+              <button
+                className="race-btn"
+                onClick={handleJoinMatch}
+                disabled={(!(matchData as any)[4] && !isApproved) || !entryFee}
+                style={{
+                  opacity: ((!(matchData as any)[4] && !isApproved) || !entryFee) ? 0.5 : 1,
+                  background: '#10b981',
+                  borderColor: '#059669'
+                }}
+              >
+                {(matchData as any)[4] ? 'JOIN MATCH (NFT)' : isApproved ? 'STEP 2: JOIN MATCH' : 'JOIN MATCH'}
+              </button>
+            </div>
           )}
 
           {/* Horse Selection Interface - only show if state is Active (1) */}
