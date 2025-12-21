@@ -64,7 +64,7 @@ export default function PVP() {
         const matchId = recentMatches[index]
         const state = Number((match.result as any)[5])
         const winners = (match.result as any)[9] as number[]
-        const hasWinners = winners && winners.length === 3 && winners[0] !== 0
+        const hasWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
         // Debug log to see actual state and winners
         console.log(`Match ${matchId.toString().slice(0, 10)}... - State: ${state}, Winners:`, winners, 'HasWinners:', hasWinners)
@@ -382,7 +382,7 @@ export default function PVP() {
               let myWinnings = 0n
 
               // Check if winners are properly set (not just [0,0,0])
-              const hasValidWinners = winners && winners.length === 3 && winners[0] !== 0
+              const hasValidWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
               // Check each position (convert BigInt winners to numbers for comparison)
               if (hasValidWinners) {
