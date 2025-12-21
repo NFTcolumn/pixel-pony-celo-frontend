@@ -66,8 +66,19 @@ export default function PVP() {
         const winners = (match.result as any)[9] as number[]
         const hasWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
+        const creator = (match.result as any)[0] as string
+        const opponent = (match.result as any)[1] as string
+
+        // Only show matches where the connected wallet actually participated
+        const isCreator = address?.toLowerCase() === creator.toLowerCase()
+        const isOpponent = address?.toLowerCase() === opponent.toLowerCase()
+        const isParticipant = isCreator || isOpponent
+
         // Debug log to see actual state and winners
-        console.log(`Match ${matchId.toString().slice(0, 10)}... - State: ${state}, Winners:`, winners, 'HasWinners:', hasWinners)
+        console.log(`Match ${matchId.toString().slice(0, 10)}... - State: ${state}, Winners:`, winners, 'HasWinners:', hasWinners, 'IsParticipant:', isParticipant)
+
+        // Skip matches where this wallet didn't participate
+        if (!isParticipant) return
 
         const matchInfo = {
           id: matchId.toString(),
