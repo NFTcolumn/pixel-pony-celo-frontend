@@ -1,1058 +1,462 @@
 import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import '../PVP.css'
 import PONYPVP_ABI from '../PonyPvPABI.json'
+import CreateMatch from '../components/pvp/CreateMatch'
+import Lobby from '../components/pvp/Lobby'
+import JoinMatch from '../components/pvp/JoinMatch'
+import HorseSelection from '../components/pvp/HorseSelection'
+import RaceOverlay from '../components/pvp/RaceOverlay'
 
 const PONYPVP_ADDRESS = '0x739331647Fa2dBefe2c7A2E453A26Ee9f4a9965A'
-const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
 
-const PONY_TOKEN_ABI = [
-  {
-    inputs: [{ name: 'owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' }
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' }
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  }
-] as const
-
-function formatPony(num: string): string {
-  const absNum = Math.abs(parseFloat(num))
-  if (absNum >= 1e12) return (absNum / 1e12).toFixed(1) + 'T'
-  if (absNum >= 1e9) return (absNum / 1e9).toFixed(1) + 'B'
-  if (absNum >= 1e6) return (absNum / 1e6).toFixed(1) + 'M'
-  if (absNum >= 1e3) return (absNum / 1e3).toFixed(1) + 'K'
-  return absNum.toFixed(2)
-}
+type ViewType = 'menu' | 'create' | 'lobby' | 'join' | 'selection' | 'race'
 
 export default function PVP() {
   const { address, isConnected } = useAccount()
-  const { writeContract, data: hash, reset: resetWrite } = useWriteContract()
-  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
-  const publicClient = usePublicClient()
-
-  const [statusMessage, setStatusMessage] = useState('Player vs Player Racing')
-  const [selectedBet, setSelectedBet] = useState<bigint | null>(null)
+  const [currentView, setCurrentView] = useState<ViewType>('menu')
   const [matchId, setMatchId] = useState('')
-  const [currentView, setCurrentView] = useState<'main' | 'match'>('main')
-  const [viewingMatchId, setViewingMatchId] = useState<string>('')
-  const [selectedHorses, setSelectedHorses] = useState<number[]>([])
-  const [isApproved, setIsApproved] = useState(false)
-  const [approvalHash, setApprovalHash] = useState<`0x${string}` | null>(null)
-  const [isApprovingToken, setIsApprovingToken] = useState(false)
-  const [createdMatchId, setCreatedMatchId] = useState<string | null>(null)
-  const [isCreatingMatch, setIsCreatingMatch] = useState(false)
-  const [isJoiningViaLink, setIsJoiningViaLink] = useState(false)
+  const [raceWinners, setRaceWinners] = useState<number[]>([])
+  const [myHorses, setMyHorses] = useState<number[]>([])
+  const [showRaceOverlay, setShowRaceOverlay] = useState(false)
+  const [activeMatches, setActiveMatches] = useState<any[]>([])
+  const [completedMatches, setCompletedMatches] = useState<any[]>([])
 
-  // Token selection
-  const [tokenType, setTokenType] = useState<'erc20' | 'nft'>('erc20')
-  const [customToken, setCustomToken] = useState('')
-  const [useCustomToken, setUseCustomToken] = useState(false)
-  const [nftTokenId, setNftTokenId] = useState('')
-  const [betInputValue, setBetInputValue] = useState('0') // Default 0
+  const { writeContract, data: executeHash } = useWriteContract()
+  const { isSuccess: raceExecuted } = useWaitForTransactionReceipt({ hash: executeHash })
 
-  // Read PONY balance
-  const { data: ponyBalanceData } = useReadContract({
-    address: PONY_TOKEN_ADDRESS,
-    abi: PONY_TOKEN_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: 42220
-  })
-
-  // Read custom token balance
-  const { data: customTokenBalanceData } = useReadContract({
-    address: (useCustomToken && customToken ? customToken : PONY_TOKEN_ADDRESS) as `0x${string}`,
-    abi: PONY_TOKEN_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: 42220,
-    query: {
-      enabled: !!address && (useCustomToken ? !!customToken : true)
-    }
-  })
-
-  // Read allowance for token approval
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: (useCustomToken && customToken ? customToken : PONY_TOKEN_ADDRESS) as `0x${string}`,
-    abi: PONY_TOKEN_ABI,
-    functionName: 'allowance',
-    args: address && selectedBet ? [address, PONYPVP_ADDRESS] : undefined,
-    chainId: 42220,
-    query: { enabled: !!address && selectedBet !== null && tokenType === 'erc20' }
-  })
-
-  // Read entry fee
-  const { data: entryFee } = useReadContract({
-    address: PONYPVP_ADDRESS,
-    abi: PONYPVP_ABI,
-    functionName: 'entryFee',
-    chainId: 42220
-  })
-
-  // Read user matches
+  // Read user's matches
   const { data: userMatches, refetch: refetchMatches } = useReadContract({
     address: PONYPVP_ADDRESS,
     abi: PONYPVP_ABI,
     functionName: 'getUserMatches',
     args: address ? [address] : undefined,
-    chainId: 42220
+    chainId: 42220,
+    query: { enabled: !!address }
   })
 
-  // Read specific match details
+  // Read match states for all user matches
+  const matchContracts = userMatches && Array.isArray(userMatches)
+    ? (userMatches as any[]).slice(-10).map((matchId) => ({
+      address: PONYPVP_ADDRESS as `0x${string}`,
+      abi: PONYPVP_ABI as any,
+      functionName: 'getMatch',
+      args: [matchId],
+      chainId: 42220
+    }))
+    : []
+
+  const { data: matchesData } = useReadContracts({
+    contracts: matchContracts as any,
+    query: { enabled: matchContracts.length > 0 }
+  })
+
+  // Separate matches into active and completed
+  useEffect(() => {
+    if (!userMatches || !Array.isArray(userMatches) || !matchesData) return
+
+    const active: any[] = []
+    const completed: any[] = []
+    const recentMatches = (userMatches as any[]).slice(-10)
+
+    matchesData.forEach((match, index) => {
+      if (match.status === 'success' && match.result) {
+        const matchId = recentMatches[index]
+        const state = Number((match.result as any)[5])
+        const winners = (match.result as any)[9] as number[]
+        const hasWinners = winners && winners.length === 3 && winners[0] !== 0
+
+        // Debug log to see actual state and winners
+        console.log(`Match ${matchId.toString().slice(0, 10)}... - State: ${state}, Winners:`, winners, 'HasWinners:', hasWinners)
+
+        const matchInfo = {
+          id: matchId.toString(),
+          state,
+          data: match.result
+        }
+
+        // Match is completed if:
+        // 1. State is 5 (Cancelled)
+        // 2. OR if winners are set (race was executed - executeRace distributes winnings immediately)
+        // Note: State 3 (ReadyToRace) with winners = race is complete!
+        if (state === 5 || hasWinners) {
+          completed.push(matchInfo)
+        } else {
+          active.push(matchInfo)
+        }
+      }
+    })
+
+    setActiveMatches(active.reverse())
+    setCompletedMatches(completed.reverse())
+  }, [userMatches, matchesData])
+
+  // Read match data (if viewing a specific match)
   const { data: matchData, refetch: refetchMatch } = useReadContract({
     address: PONYPVP_ADDRESS,
     abi: PONYPVP_ABI,
     functionName: 'getMatch',
-    args: viewingMatchId ? [viewingMatchId as `0x${string}`] : undefined,
-    chainId: 42220
+    args: matchId ? [matchId as `0x${string}`] : undefined,
+    chainId: 42220,
+    query: { enabled: !!matchId }
   })
 
-  // Get current picker for viewing match
-  const { data: currentPicker } = useReadContract({
-    address: PONYPVP_ADDRESS,
-    abi: PONYPVP_ABI,
-    functionName: 'getCurrentPicker',
-    args: viewingMatchId ? [viewingMatchId as `0x${string}`] : undefined,
-    chainId: 42220
-  })
-
-  const ponyBalance = ponyBalanceData ? formatPony(formatEther(ponyBalanceData)) : '0'
-
-  // Check URL parameters for match ID on mount and auto-view
+  // Check URL parameters for match ID on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const matchParam = urlParams.get('match')
     if (matchParam) {
       setMatchId(matchParam)
-      setViewingMatchId(matchParam)
-      setCurrentView('match')
-      setIsJoiningViaLink(true)
-      setStatusMessage(`Loading match details...`)
+      setCurrentView('join')
     }
   }, [])
 
-  // Auto-fill bet amount and token info when viewing match via link
+  // Handle race execution result
   useEffect(() => {
-    if (isJoiningViaLink && matchData && viewingMatchId) {
-      const isNFT = (matchData as any)[4]
-      const betAmount = (matchData as any)[3]
-      const tokenAddress = (matchData as any)[2]
-      const matchState = Number((matchData as any)[5])
+    if (!raceExecuted || !executeHash) return
 
-      // Only auto-fill if match is waiting for opponent (state 0)
-      if (matchState === 0) {
-        if (isNFT) {
-          setTokenType('nft')
-          const nftTokenIdFromMatch = (matchData as any)[8]?.toString() || ''
-          setStatusMessage(`Match found! This is an NFT match. Token ID: ${nftTokenIdFromMatch}. Click JOIN MATCH to participate.`)
-        } else {
-          setTokenType('erc20')
-          setSelectedBet(betAmount)
-          setBetInputValue(formatEther(betAmount))
+    console.log('Race executed successfully!')
+    refetchMatch()
 
-          // Check if custom token
-          if (tokenAddress.toLowerCase() !== PONY_TOKEN_ADDRESS.toLowerCase()) {
-            setUseCustomToken(true)
-            setCustomToken(tokenAddress)
-          }
-
-          const betDisplay = formatPony(formatEther(betAmount))
-          setStatusMessage(`Match found! Bet: ${betDisplay} tokens. Review details and join!`)
-        }
-      } else {
-        setStatusMessage(`This match is already in progress or completed.`)
-      }
-    }
-  }, [isJoiningViaLink, matchData, viewingMatchId])
-
-  // Check if approved whenever allowance or selectedBet changes
-  useEffect(() => {
-    if (allowance && selectedBet && tokenType === 'erc20') {
-      const approved = allowance >= selectedBet
-      setIsApproved(approved)
-
-      // Update status message based on approval state
-      if (approved && !isApprovingToken) {
-        const betDisplay = formatPony(formatEther(selectedBet))
-        const tokenName = useCustomToken ? 'tokens' : 'PONY'
-        setStatusMessage(`✅ Approved! ${betDisplay} ${tokenName} ready. Click STEP 2 to create match!`)
-      } else if (selectedBet !== null && !isApprovingToken) {
-        const betDisplay = formatPony(formatEther(selectedBet))
-        const tokenName = useCustomToken ? 'tokens' : 'PONY'
-        setStatusMessage(`Ready! ${betDisplay} ${tokenName} bet. Click STEP 1 to approve!`)
-      }
-    } else if (tokenType === 'nft') {
-      setIsApproved(true) // NFT doesn't need this approval step
-    } else {
-      setIsApproved(false)
-    }
-  }, [allowance, selectedBet, tokenType, useCustomToken, isApprovingToken])
-
-  // Track approval transaction
-  useEffect(() => {
-    if (hash && isApprovingToken && !approvalHash) {
-      console.log('Tracking approval hash:', hash)
-      setApprovalHash(hash)
-      setStatusMessage('Approval transaction sent! Waiting for confirmation...')
-    }
-  }, [hash, isApprovingToken, approvalHash])
-
-  // Handle approval confirmation with polling
-  useEffect(() => {
-    if (!approvalHash || !isConfirmed || approvalHash !== hash) return
-
-    console.log('Approval confirmed! Refetching allowance...')
-    setStatusMessage('Approval confirmed! Checking allowance...')
-
-    const checkAllowance = async () => {
-      // More aggressive polling: 25 attempts with shorter delays
-      for (let i = 0; i < 25; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setStatusMessage(`Verifying approval... (${i + 1}/25)`)
-        const result = await refetchAllowance()
-        console.log(`Checking allowance... attempt ${i + 1}/25, result:`, result.data?.toString())
-        if (result.data && selectedBet && result.data >= selectedBet) {
-          console.log('Allowance detected! Ready to create match!')
-          const betDisplay = formatPony(formatEther(selectedBet))
-          const tokenName = useCustomToken ? 'tokens' : 'PONY'
-          setStatusMessage(`✅ Approved! ${betDisplay} ${tokenName} ready. Click STEP 2 to create match!`)
-          setApprovalHash(null)
-          setIsApprovingToken(false)
-          resetWrite() // Clear the transaction state
-          // Force one more refetch after small delay to ensure hook updates
-          setTimeout(() => refetchAllowance(), 100)
-          return
-        }
-      }
-      console.log('Approval polling completed but not detected yet')
-      setStatusMessage('Approval on-chain. Refresh page or try STEP 2 now.')
-      setApprovalHash(null)
-      setIsApprovingToken(false)
-      resetWrite()
-      // Force a final refetch
-      refetchAllowance()
-    }
-
-    checkAllowance()
-  }, [approvalHash, isConfirmed, hash, refetchAllowance, selectedBet, resetWrite, useCustomToken])
-
-  // Handle match creation confirmation
-  useEffect(() => {
-    const handleMatchCreated = async () => {
-      if (!isConfirmed || !hash || !publicClient || !isCreatingMatch) return
-
-      try {
-        console.log('Match creation confirmed! Getting transaction receipt...')
-        setStatusMessage('Match created! Getting match details...')
-
-        // Wait a moment for blockchain state to update
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Refetch matches first to get the latest list
-        const result = await refetchMatches()
-        console.log('Refetched matches:', result.data)
-
-        // Get the most recent match (should be the one just created)
-        if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-          const latestMatchId = result.data[result.data.length - 1] as string
-          console.log('Latest match ID:', latestMatchId)
-          setCreatedMatchId(latestMatchId)
-
-          const shareUrl = `${window.location.origin}/pvp?match=${latestMatchId}`
-          setStatusMessage(`Match created! Share this link: ${shareUrl}`)
-        } else {
-          // Fallback: try to decode from logs
-          const receipt = await publicClient.getTransactionReceipt({ hash })
-
-          if (receipt.status === 'success') {
-            const matchLogs = receipt.logs.filter((log: any) =>
-              log.address.toLowerCase() === PONYPVP_ADDRESS.toLowerCase()
-            )
-
-            console.log('Found match logs:', matchLogs)
-
-            const { decodeEventLog } = await import('viem')
-
-            for (const log of matchLogs) {
-              try {
-                const decodedLog = decodeEventLog({
-                  abi: PONYPVP_ABI,
-                  data: log.data,
-                  topics: log.topics,
-                  strict: false
-                })
-
-                console.log('Decoded log:', decodedLog)
-
-                if (decodedLog.eventName === 'MatchCreated') {
-                  const matchId = (decodedLog.args as any).matchId as string
-                  console.log('Match created with ID from event:', matchId)
-                  setCreatedMatchId(matchId)
-
-                  const shareUrl = `${window.location.origin}/pvp?match=${matchId}`
-                  setStatusMessage(`Match created! Share this link: ${shareUrl}`)
-                  break
-                }
-              } catch (err) {
-                console.log('Could not decode log:', err)
-              }
-            }
-          }
-        }
-
-        setIsCreatingMatch(false)
-        resetWrite()
-      } catch (error) {
-        console.error('Error getting match details:', error)
-        setStatusMessage('Match created! Check "My Matches" below.')
-        setIsCreatingMatch(false)
-        refetchMatches()
-        resetWrite()
-      }
-    }
-
-    handleMatchCreated()
-  }, [isConfirmed, hash, publicClient, isCreatingMatch, refetchMatches, resetWrite])
-
-  // Get max bet based on user's wallet balance
-  const getMaxBet = () => {
-    const balanceData = useCustomToken ? customTokenBalanceData : ponyBalanceData
-    if (!balanceData || balanceData === BigInt(0)) {
-      return '1000000' // Minimum if no balance
-    }
-    // Return the user's actual token balance in wei as string
-    return balanceData.toString()
-  }
-
-  // Get formatted max bet for display
-  const getMaxBetFormatted = () => {
-    const maxBet = getMaxBet()
-    try {
-      return formatPony(formatEther(BigInt(maxBet)))
-    } catch {
-      return '0'
-    }
-  }
-
-  const getTokenAddress = () => {
-    return useCustomToken && customToken ? customToken : PONY_TOKEN_ADDRESS
-  }
-
-  // Handle input change
-  const handleBetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    // Only allow numbers
-    if (value === '' || /^\d+$/.test(value)) {
-      setBetInputValue(value)
-      if (value !== '') {
-        setSelectedBet(parseEther(value))
-        setIsApproved(false) // Reset approval when bet changes
-        setIsApprovingToken(false) // Reset approving state
-      }
-    }
-  }
-
-  // Handle increment button click
-  const handleIncrementBet = (increment: string) => {
-    const currentValue = betInputValue === '' ? '0' : betInputValue
-    const newValue = (BigInt(currentValue) + BigInt(increment)).toString()
-
-    // Check if new value exceeds max bet
-    const maxBet = getMaxBet()
-    if (BigInt(newValue) > BigInt(maxBet)) {
-      setBetInputValue(maxBet)
-      setSelectedBet(parseEther(maxBet))
-    } else {
-      setBetInputValue(newValue)
-      setSelectedBet(parseEther(newValue))
-    }
-    setIsApproved(false) // Reset approval when bet changes
-    setIsApprovingToken(false) // Reset approving state
-  }
-
-  const handleApprove = async () => {
-    if (tokenType === 'nft') {
-      setStatusMessage('NFT approval: Use your wallet to approve the NFT directly, then create match')
-      return
-    }
-    if (!selectedBet) return
-    try {
-      const tokenAddress = getTokenAddress()
-      setStatusMessage('Approving tokens...')
-      setIsApprovingToken(true)
-      setApprovalHash(null)
-      await writeContract({
-        address: tokenAddress as `0x${string}`,
-        abi: PONY_TOKEN_ABI,
-        functionName: 'approve',
-        args: [PONYPVP_ADDRESS, selectedBet],
-        chainId: 42220
-      })
-    } catch (error) {
-      setStatusMessage('Approval failed')
-      setIsApprovingToken(false)
-    }
-  }
-
-  const handleCreateMatch = async () => {
-    if (!entryFee) return
-
-    // Validation
-    if (tokenType === 'erc20' && !selectedBet) {
-      setStatusMessage('Please select a bet amount for ERC20')
-      return
-    }
-    if (tokenType === 'nft' && !nftTokenId) {
-      setStatusMessage('Please enter NFT token ID')
-      return
-    }
-    if (useCustomToken && !customToken) {
-      setStatusMessage('Please enter custom token address')
-      return
-    }
-
-    try {
-      setStatusMessage('Creating match...')
-      setIsCreatingMatch(true)
-      setCreatedMatchId(null)
-
-      const tokenAddress = getTokenAddress()
-      const isNFT = tokenType === 'nft'
-      const betAmount = isNFT ? BigInt(0) : selectedBet!
-      const tokenId = isNFT ? BigInt(nftTokenId) : BigInt(0)
-
-      await writeContract({
-        address: PONYPVP_ADDRESS,
-        abi: PONYPVP_ABI,
-        functionName: 'createMatch',
-        args: [tokenAddress, betAmount, isNFT, tokenId],
-        value: entryFee as bigint,
-        chainId: 42220
-      })
-      setStatusMessage('Match transaction sent! Waiting for confirmation...')
-    } catch (error) {
-      setStatusMessage('Failed to create match')
-      setIsCreatingMatch(false)
-    }
-  }
-
-  // Helper functions
-  const formatMatchState = (state: number) => {
-    const states = ['Waiting for Opponent', 'Selecting Horses', 'Ready to Race', 'Completed', 'Cancelled']
-    return states[state] || 'Unknown'
-  }
-
-  const getAvailableHorses = () => {
-    if (!matchData) return Array.from({length: 16}, (_, i) => i)
-    const creatorHorses = (matchData as any)[6] || []
-    const opponentHorses = (matchData as any)[7] || []
-    const takenHorses = [...creatorHorses, ...opponentHorses].map((h: any) => Number(h))
-    return Array.from({length: 16}, (_, i) => i).filter(h => !takenHorses.includes(h))
-  }
-
-  const toggleHorseSelection = (horseId: number) => {
-    if (selectedHorses.includes(horseId)) {
-      setSelectedHorses(selectedHorses.filter(h => h !== horseId))
-    } else if (selectedHorses.length < 4) {
-      setSelectedHorses([...selectedHorses, horseId])
-    }
-  }
-
-  const handleJoinMatch = async () => {
-    if (!matchId || !entryFee) return
-    try {
-      setStatusMessage('Joining match...')
-      // matchId is already a bytes32 hex string
-      await writeContract({
-        address: PONYPVP_ADDRESS,
-        abi: PONYPVP_ABI,
-        functionName: 'joinMatch',
-        args: [matchId as `0x${string}`],
-        value: entryFee as bigint,
-        chainId: 42220
-      })
-      setStatusMessage('Joined match!')
-      // Refetch matches after joining
-      refetchMatches()
-    } catch (error) {
-      setStatusMessage('Failed to join match')
-    }
-  }
-
-  const handleSelectHorses = async () => {
-    if (!viewingMatchId || selectedHorses.length !== 4) {
-      setStatusMessage('Please select exactly 4 horses')
-      return
-    }
-    try {
-      setStatusMessage('Selecting horses...')
-      // Convert number array to uint8 array
-      const horseIds = selectedHorses.map(h => h)
-      await writeContract({
-        address: PONYPVP_ADDRESS,
-        abi: PONYPVP_ABI,
-        functionName: 'selectHorses',
-        args: [viewingMatchId as `0x${string}`, horseIds],
-        chainId: 42220
-      })
-      setStatusMessage('Horses selected!')
-      setSelectedHorses([])
-      // Refetch match data
+    // Small delay to ensure blockchain state is updated
+    setTimeout(() => {
       refetchMatch()
-    } catch (error) {
-      setStatusMessage('Failed to select horses')
+    }, 2000)
+  }, [raceExecuted, executeHash, refetchMatch])
+
+  // Watch for match state changes
+  useEffect(() => {
+    if (!matchData || !address) return
+
+    const state = Number((matchData as any)[5])
+    const winners = (matchData as any)[9] as number[]
+
+    // State 3 = ReadyToRace
+    const hasWinners = winners && winners.length === 3 && winners[0] !== 0
+
+    // If no winners yet, execute race automatically
+    if (state === 3 && !hasWinners && currentView === 'selection' && !executeHash) {
+      console.log('All horses selected! Auto-executing race...')
+      handleAllHorsesSelected()
     }
+
+    // If winners are set, race is complete (executeRace already distributed winnings)
+    if (hasWinners && currentView === 'selection') {
+      console.log('Race completed! Winners:', winners)
+      setRaceWinners(winners)
+
+      // Get my horses
+      const creator = (matchData as any)[0] as string
+      const creatorHorses = (matchData as any)[6] as number[]
+      const opponentHorses = (matchData as any)[7] as number[]
+      const isCreator = address?.toLowerCase() === creator.toLowerCase()
+
+      setMyHorses(isCreator ? creatorHorses : opponentHorses)
+
+      // Show race overlay
+      setShowRaceOverlay(true)
+      setCurrentView('race')
+    }
+  }, [matchData, address, currentView, executeHash])
+
+  const handleMatchCreated = (newMatchId: string) => {
+    setMatchId(newMatchId)
+    setCurrentView('lobby')
   }
 
-  const handleExecuteRace = async () => {
-    if (!viewingMatchId) return
+  const handleMatchJoined = () => {
+    refetchMatch()
+    setCurrentView('selection')
+  }
+
+  const handleAllHorsesSelected = async () => {
+    if (!matchId) return
+
     try {
-      setStatusMessage('Executing race...')
+      console.log('All horses selected! Executing race...')
+
+      // Execute the race on-chain
       await writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'executeRace',
-        args: [viewingMatchId as `0x${string}`],
+        args: [matchId as `0x${string}`],
         chainId: 42220
       })
-      setStatusMessage('Race completed! Winners have been paid automatically.')
-      // Refetch match data
-      refetchMatch()
+
+      // The race will show after transaction confirms via useEffect above
     } catch (error) {
-      setStatusMessage('Failed to execute race')
+      console.error('Error executing race:', error)
     }
   }
 
-  const handleViewMatch = (matchId: string) => {
-    setViewingMatchId(matchId)
-    setCurrentView('match')
+  const handleCloseRace = () => {
+    setShowRaceOverlay(false)
+    setCurrentView('menu')
+    setMatchId('')
+    refetchMatches()
+    // Clear URL parameter
+    window.history.replaceState({}, '', '/pvp')
+  }
+
+  const handleBackToMenu = () => {
+    setCurrentView('menu')
+    setMatchId('')
+    // Clear URL parameter
+    window.history.replaceState({}, '', '/pvp')
   }
 
   if (!isConnected) {
     return (
       <div className="container">
-        <section>
-          <h2>Connect Your Wallet</h2>
-          <p style={{ textAlign: 'center', fontSize: '10px', padding: '20px' }}>
-            Please connect your wallet to play PVP
-          </p>
-        </section>
+        <div className="status-message">
+          Please connect your wallet to play PVP
+        </div>
       </div>
     )
   }
 
+  // Show race overlay
+  if (currentView === 'race') {
+    return (
+      <RaceOverlay
+        isOpen={showRaceOverlay}
+        winners={raceWinners}
+        myHorses={myHorses}
+        matchId={matchId}
+        onClose={handleCloseRace}
+      />
+    )
+  }
+
+  // Show create match
+  if (currentView === 'create') {
+    return (
+      <CreateMatch
+        onMatchCreated={handleMatchCreated}
+        onBack={handleBackToMenu}
+      />
+    )
+  }
+
+  // Show lobby (waiting for opponent)
+  if (currentView === 'lobby') {
+    return (
+      <Lobby
+        matchId={matchId}
+        onMatchJoined={handleMatchJoined}
+        onBack={handleBackToMenu}
+      />
+    )
+  }
+
+  // Show join match (for invite links)
+  if (currentView === 'join') {
+    return (
+      <JoinMatch
+        matchId={matchId}
+        onMatchJoined={handleMatchJoined}
+        onBack={handleBackToMenu}
+      />
+    )
+  }
+
+  // Show horse selection
+  if (currentView === 'selection') {
+    return (
+      <HorseSelection
+        matchId={matchId}
+        onAllHorsesSelected={handleAllHorsesSelected}
+        onBack={handleBackToMenu}
+      />
+    )
+  }
+
+  // Main menu
   return (
     <div className="container">
+      {/* Header */}
       <div className="header">
-        <img src="/logo.png" alt="Pixel Ponies Logo" />
-        <div className="tagline">PLAYER VS PLAYER RACING</div>
+        <h2 style={{ fontSize: '16px', color: '#000' }}>🎮 PLAYER VS PLAYER</h2>
+        <div className="tagline">COMPETE HEAD-TO-HEAD FOR GLORY AND PRIZES</div>
         <div className="wallet-info">
-          {address && `${address.slice(0, 6)}...${address.slice(-4)} | ${ponyBalance} PONY`}
+          {address && `${address.slice(0, 6)}...${address.slice(-4)}`}
         </div>
       </div>
 
-      <div className="status-message">{statusMessage}</div>
+      {/* Status Message */}
+      <div className="status-message">
+        Welcome to PVP! Create a match or join one using an invite link
+      </div>
 
+      {/* How to Play */}
       <div className="info-section">
-        <h3>How PVP Works</h3>
+        <h3>HOW TO PLAY PVP</h3>
         <div className="info-list">
-          <div className="info-item">1. Create a match or join with a match ID</div>
-          <div className="info-item">2. Each player picks 8 horses (4-4-4-4 phases)</div>
-          <div className="info-item">3. All 16 horses race</div>
-          <div className="info-item">4. Winners: 80% / 17.5% / 2.5% (ERC20) or Winner Takes All (NFT)</div>
-          <div className="info-item">5. UNLIMITED BETS: Bet any amount up to your wallet balance!</div>
-          <div className="info-item">Entry Fee: {entryFee ? formatEther(entryFee as bigint) : '0.001'} CELO per player</div>
-        </div>
-      </div>
-
-      <div className="bet-section">
-        <div className="bet-label">TOKEN TYPE</div>
-        <div className="bet-buttons">
-          <button
-            className={`bet-btn ${tokenType === 'erc20' ? 'active' : ''}`}
-            onClick={() => setTokenType('erc20')}
-          >
-            ERC20
-          </button>
-          <button
-            className={`bet-btn ${tokenType === 'nft' ? 'active' : ''}`}
-            onClick={() => setTokenType('nft')}
-          >
-            NFT
-          </button>
-        </div>
-      </div>
-
-      <div className="bet-section">
-        <div className="bet-label">TOKEN ADDRESS</div>
-        <div style={{ marginBottom: '10px' }}>
-          <button
-            className={`bet-btn ${!useCustomToken ? 'active' : ''}`}
-            onClick={() => setUseCustomToken(false)}
-            style={{ width: '100%', marginBottom: '5px' }}
-          >
-            Use PONY Token (Default)
-          </button>
-          <button
-            className={`bet-btn ${useCustomToken ? 'active' : ''}`}
-            onClick={() => setUseCustomToken(true)}
-            style={{ width: '100%' }}
-          >
-            Use Custom Token
-          </button>
-        </div>
-        {useCustomToken && (
-          <input
-            type="text"
-            value={customToken}
-            onChange={(e) => setCustomToken(e.target.value)}
-            placeholder="Enter token contract address"
-            className="match-input"
-          />
-        )}
-      </div>
-
-      {tokenType === 'nft' && (
-        <div className="input-section">
-          <label>NFT TOKEN ID (1:1 Matching)</label>
-          <p style={{ fontSize: '8px', color: '#666', marginBottom: '8px', textAlign: 'center' }}>
-            Both players bet 1 NFT from the same collection. Winner takes both NFTs.
-          </p>
-          <input
-            type="text"
-            value={nftTokenId}
-            onChange={(e) => setNftTokenId(e.target.value)}
-            placeholder="Enter your NFT token ID"
-            className="match-input"
-          />
-        </div>
-      )}
-
-      {tokenType === 'erc20' ? (
-        <>
-          <div className="bet-section">
-            <div className="bet-label">BET AMOUNT (in tokens)</div>
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                <input
-                  type="text"
-                  value={betInputValue}
-                  onChange={handleBetInputChange}
-                  placeholder="Enter bet amount"
-                  className="match-input"
-                  style={{ flex: 1, textAlign: 'center' }}
-                />
-                <div style={{ fontSize: '10px', color: '#666', minWidth: '80px', textAlign: 'right' }}>
-                  {formatPony(betInputValue)} tokens
-                </div>
-              </div>
-
-              {/* Increment Buttons - Row 1 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('1000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +1K
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('10000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +10K
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('100000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +100K
-                </button>
-              </div>
-
-              {/* Increment Buttons - Row 2 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('1000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +1M
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('10000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +10M
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('100000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +100M
-                </button>
-              </div>
-
-              {/* Increment Buttons - Row 3 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('1000000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +1B
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('10000000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +10B
-                </button>
-                <button
-                  className="bet-btn"
-                  onClick={() => handleIncrementBet('100000000000')}
-                  style={{ padding: '10px', fontSize: '11px' }}
-                >
-                  +100B
-                </button>
-              </div>
-
-              <div style={{ fontSize: '8px', color: '#666', textAlign: 'center', marginTop: '8px' }}>
-                Max Balance: {getMaxBetFormatted()}
-              </div>
-            </div>
+          <div className="info-item">
+            🎯 <strong>Create a Match:</strong> Choose your bet amount and create a match
           </div>
+          <div className="info-item">
+            🔗 <strong>Share Invite:</strong> Copy the invite link and send it to your opponent
+          </div>
+          <div className="info-item">
+            ⏰ <strong>10 Minute Timer:</strong> Opponent must join within 10 minutes
+          </div>
+          <div className="info-item">
+            🐴 <strong>Pick Horses:</strong> Pick 4 horses per turn, 2 turns per player (8 total)
+          </div>
+          <div className="info-item">
+            🏁 <strong>Race Time:</strong> Watch the race and see whose horses win!
+          </div>
+          <div className="info-item">
+            🏆 <strong>Winner Takes All:</strong> Most horses in top 3 positions wins the pot
+          </div>
+        </div>
+      </div>
 
-          <button
-            className="race-btn"
-            onClick={handleApprove}
-            disabled={!selectedBet || isApproved}
-            style={{ opacity: (!selectedBet || isApproved) ? 0.5 : 1 }}
-          >
-            {isApproved ? '✅ APPROVED!' : `STEP 1: APPROVE ${useCustomToken ? 'TOKEN' : 'PONY'}`}
-          </button>
-
-          <button
-            className="race-btn"
-            onClick={handleCreateMatch}
-            disabled={!isApproved}
-            style={{ opacity: !isApproved ? 0.5 : 1 }}
-          >
-            STEP 2: CREATE MATCH
-          </button>
-        </>
-      ) : (
-        <button className="race-btn" onClick={handleCreateMatch}>
-          CREATE NFT MATCH
+      {/* Main Menu */}
+      <div className="pvp-menu" style={{ marginTop: '20px' }}>
+        <button
+          className="menu-btn"
+          onClick={() => setCurrentView('create')}
+        >
+          🎲 CREATE NEW MATCH
         </button>
-      )}
-
-      <div className="input-section">
-        <label>OR JOIN A MATCH</label>
-        <input
-          type="text"
-          value={matchId}
-          onChange={(e) => setMatchId(e.target.value)}
-          placeholder="Enter match ID"
-          className="match-input"
-        />
       </div>
 
-      <button className="race-btn" onClick={handleJoinMatch} disabled={!matchId}>
-        JOIN MATCH
-      </button>
-
-      {/* Share Match Section */}
-      {createdMatchId && (
-        <div className="share-section">
-          <div className="share-label">🎉 MATCH CREATED! SHARE THIS LINK:</div>
-          <div className="share-link-box">
-            <input
-              type="text"
-              value={`${window.location.origin}/pvp?match=${createdMatchId}`}
-              readOnly
-              onClick={(e) => {
-                e.currentTarget.select()
-                navigator.clipboard.writeText(e.currentTarget.value)
-                setStatusMessage('Link copied to clipboard!')
-              }}
-              className="share-input"
-            />
-          </div>
-          <button
-            className="race-btn"
-            onClick={() => handleViewMatch(createdMatchId)}
-            style={{ marginTop: '10px', fontSize: '11px' }}
-          >
-            VIEW YOUR MATCH
-          </button>
-        </div>
-      )}
-
-      {/* My Matches Section */}
-      {currentView === 'main' && userMatches && Array.isArray(userMatches) && userMatches.length > 0 ? (
-        <div className="bet-section">
-          <div className="bet-label">MY MATCHES ({userMatches.length})</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {(userMatches as string[]).map((mid: string) => (
+      {/* Active Matches */}
+      {activeMatches.length > 0 && (
+        <div className="info-section">
+          <h3>🏁 YOUR ACTIVE MATCHES</h3>
+          <div className="info-list">
+            {activeMatches.map((match: any, idx) => (
               <button
-                key={mid}
-                onClick={() => handleViewMatch(mid)}
-                className="race-btn"
-                style={{ fontSize: '10px' }}
+                key={idx}
+                className="info-item"
+                onClick={() => {
+                  setMatchId(match.id)
+                  // Route to correct view based on state
+                  if (match.state === 0) {
+                    setCurrentView('lobby') // Created - waiting for opponent
+                  } else if (match.state === 1) {
+                    setCurrentView('lobby') // Joined - waiting for first pick
+                  } else if (match.state === 2 || match.state === 3) {
+                    setCurrentView('selection') // Selecting or ReadyToRace
+                  }
+                }}
+                style={{ cursor: 'pointer', textAlign: 'left' }}
               >
-                View Match: {mid.slice(0, 10)}...{mid.slice(-6)}
+                Match #{match.id.slice(0, 10)}...
+                <span style={{ fontSize: '10px', color: '#666', marginLeft: '8px' }}>
+                  {match.state === 0 ? '⏳ Waiting' :
+                    match.state === 1 ? '🎯 Joined' :
+                      match.state === 2 ? '🐴 Selecting' :
+                        match.state === 3 ? '🏁 Ready' :
+                        '❓ Unknown'}
+                </span>
               </button>
             ))}
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* Match Viewing Interface */}
-      {currentView === 'match' && matchData ? (
-        <>
-          <button
-            className="back-btn"
-            onClick={() => {
-              setCurrentView('main')
-              setViewingMatchId('')
-              setSelectedHorses([])
-            }}
-          >
-            ← BACK TO MAIN
-          </button>
+      {/* Completed Races */}
+      {completedMatches.length > 0 && (
+        <div className="info-section" style={{ marginTop: '20px' }}>
+          <h3>✅ COMPLETED RACES</h3>
+          <div className="info-list">
+            {completedMatches.map((match: any, idx) => {
+              const winners = (match.data as any)[9] as number[]
+              const creator = (match.data as any)[0] as string
+              const creatorHorses = (match.data as any)[6] as number[]
+              const opponentHorses = (match.data as any)[7] as number[]
+              const betAmount = (match.data as any)[3] as bigint
+              const isNFT = (match.data as any)[4] as boolean
+              const isCreator = address?.toLowerCase() === creator.toLowerCase()
+              const myHorses = isCreator ? creatorHorses : opponentHorses
 
-          <div className="match-info">
-            <h3 style={{ fontSize: '12px', marginBottom: '15px', textAlign: 'center' }}>Match Details</h3>
-            <div className="info-row">
-              <span>Match ID:</span>
-              <span style={{ fontSize: '8px' }}>{viewingMatchId.slice(0, 10)}...{viewingMatchId.slice(-6)}</span>
-            </div>
-            <div className="info-row">
-              <span>State:</span>
-              <span>{formatMatchState(Number((matchData as any)[5]))}</span>
-            </div>
-            <div className="info-row">
-              <span>Creator:</span>
-              <span style={{ fontSize: '8px' }}>{String((matchData as any)[0]).slice(0, 6)}...{String((matchData as any)[0]).slice(-4)}</span>
-            </div>
-            {(matchData as any)[1] !== '0x0000000000000000000000000000000000000000' && (
-              <div className="info-row">
-                <span>Opponent:</span>
-                <span style={{ fontSize: '8px' }}>{String((matchData as any)[1]).slice(0, 6)}...{String((matchData as any)[1]).slice(-4)}</span>
-              </div>
-            )}
-            <div className="info-row">
-              <span>Bet Amount:</span>
-              <span>
-                {(matchData as any)[4]
-                  ? `NFT Token ID: ${(matchData as any)[8]?.toString() || 'N/A'}`
-                  : `${formatPony(formatEther((matchData as any)[3]))} tokens`
+              // Calculate actual winnings based on positions won
+              const pot = betAmount * 2n
+              const afterFee = pot * 9750n / 10000n // After 2.5% fee
+
+              let myWinnings = 0n
+
+              // Check if winners are properly set (not just [0,0,0])
+              const hasValidWinners = winners && winners.length === 3 && winners[0] !== 0
+
+              // Check each position (convert BigInt winners to numbers for comparison)
+              if (hasValidWinners) {
+                const winner1 = Number(winners[0])
+                const winner2 = Number(winners[1])
+                const winner3 = Number(winners[2])
+
+                const firstPlace = myHorses.includes(winner1)
+                const secondPlace = myHorses.includes(winner2)
+                const thirdPlace = myHorses.includes(winner3)
+
+                if (!isNFT) {
+                  if (firstPlace) myWinnings += afterFee * 8000n / 10000n  // 80%
+                  if (secondPlace) myWinnings += afterFee * 1750n / 10000n // 17.5%
+                  if (thirdPlace) myWinnings += afterFee * 250n / 10000n   // 2.5%
                 }
-              </span>
-            </div>
-            {Number((matchData as any)[5]) === 1 && currentPicker ? (
-              <div className="info-row">
-                <span>Current Turn:</span>
-                <span style={{ fontSize: '8px', color: currentPicker === address ? '#4ade80' : '#ff6b6b' }}>
-                  {currentPicker === address ? 'YOUR TURN' : 'OPPONENT'}
-                </span>
-              </div>
-            ) : null}
-          </div>
+              }
 
-          {/* Share/Invite Button - Show when match is waiting for opponent or during horse selection */}
-          {(Number((matchData as any)[5]) === 0 || Number((matchData as any)[5]) === 1) && !isJoiningViaLink && (
-            <button
-              className="race-btn"
-              onClick={() => {
-                const shareUrl = `${window.location.origin}/pvp?match=${viewingMatchId}`
-                navigator.clipboard.writeText(shareUrl)
-                setStatusMessage('Invite link copied to clipboard! Share it with your opponent.')
-              }}
-              style={{
-                background: '#fbbf24',
-                borderColor: '#f59e0b',
-                marginBottom: '15px'
-              }}
-            >
-              📋 COPY INVITE LINK
-            </button>
-          )}
+              // Calculate profit/loss
+              const myProfit = myWinnings - betAmount
+              const didIWin = myProfit > 0n
 
-          {/* Join Interface for users arriving via link - Show only if waiting for opponent (state 0) */}
-          {isJoiningViaLink && Number((matchData as any)[5]) === 0 && (matchData as any)[0].toLowerCase() !== address?.toLowerCase() && (
-            <div className="bet-section" style={{ background: '#fffbeb', border: '2px solid #fbbf24' }}>
-              <div className="bet-label" style={{ color: '#92400e' }}>🎮 JOIN THIS MATCH</div>
-              <div style={{ padding: '15px', fontSize: '10px', textAlign: 'center', marginBottom: '15px', color: '#78350f' }}>
-                <div style={{ marginBottom: '10px' }}>
-                  <strong>Entry Fee:</strong> {entryFee ? formatEther(entryFee as bigint) : '0.001'} CELO
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                  <strong>Bet Amount:</strong> {(matchData as any)[4]
-                    ? `NFT (Token ID: ${(matchData as any)[8]?.toString() || 'N/A'})`
-                    : `${formatPony(formatEther((matchData as any)[3]))} tokens`
-                  }
-                </div>
-                <div style={{ fontSize: '8px', color: '#92400e', marginTop: '10px' }}>
-                  Click below to approve and join this match!
-                </div>
-              </div>
+              console.log('Match:', match.id.slice(0, 10), 'Winnings:', myWinnings, 'Bet:', betAmount, 'Profit:', myProfit)
 
-              {/* For ERC20 matches, show approve button if not approved */}
-              {!(matchData as any)[4] && !isApproved && (
+              // Format the profit/loss for display
+              const formatProfit = (profit: bigint) => {
+                const isPositive = profit >= 0n
+                const absProfit = isPositive ? profit : -profit
+                const num = Number(absProfit) / 1e18 // Convert from wei to tokens
+
+                if (num >= 1000000000) {
+                  return `${isPositive ? '+' : '-'}${(num / 1000000000).toFixed(1)}B`
+                } else if (num >= 1000000) {
+                  return `${isPositive ? '+' : '-'}${(num / 1000000).toFixed(1)}M`
+                } else if (num >= 1000) {
+                  return `${isPositive ? '+' : '-'}${(num / 1000).toFixed(1)}K`
+                }
+                return `${isPositive ? '+' : '-'}${num.toFixed(2)}`
+              }
+
+              return (
                 <button
-                  className="race-btn"
-                  onClick={handleApprove}
-                  disabled={!selectedBet || isApproved}
+                  key={idx}
+                  className="info-item"
+                  onClick={() => {
+                    setMatchId(match.id)
+                    setRaceWinners(Array.from(winners))
+                    setMyHorses(Array.from(myHorses))
+                    setShowRaceOverlay(true)
+                    setCurrentView('race')
+                  }}
                   style={{
-                    opacity: (!selectedBet || isApproved) ? 0.5 : 1,
-                    marginBottom: '10px'
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    background: didIWin ? '#f0fdf4' : '#fef2f2',
+                    borderColor: didIWin ? '#4ade80' : '#f87171'
                   }}
                 >
-                  {isApproved ? '✅ APPROVED!' : 'STEP 1: APPROVE TOKENS'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span>Match #{match.id.slice(0, 10)}...</span>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: hasValidWinners ? (didIWin ? '#22c55e' : '#f87171') : '#666',
+                    }}>
+                      {!hasValidWinners ? '⏳ Processing...' : (didIWin ? '🎉 WON ' : '😢 LOST ')}{hasValidWinners ? formatProfit(myProfit) : ''}
+                    </span>
+                  </div>
                 </button>
-              )}
-
-              {/* Join button - enabled when approved (for ERC20) or immediately (for NFT) */}
-              <button
-                className="race-btn"
-                onClick={handleJoinMatch}
-                disabled={(!(matchData as any)[4] && !isApproved) || !entryFee}
-                style={{
-                  opacity: ((!(matchData as any)[4] && !isApproved) || !entryFee) ? 0.5 : 1,
-                  background: '#10b981',
-                  borderColor: '#059669'
-                }}
-              >
-                {(matchData as any)[4] ? 'JOIN MATCH (NFT)' : isApproved ? 'STEP 2: JOIN MATCH' : 'JOIN MATCH'}
-              </button>
-            </div>
-          )}
-
-          {/* Horse Selection Interface - only show if state is Active (1) */}
-          {Number((matchData as any)[5]) === 1 && currentPicker === address && (
-            <>
-              <div className="selection-info">
-                SELECT 4 HORSES ({selectedHorses.length}/4 selected)
-              </div>
-
-              <div className="horse-grid">
-                {getAvailableHorses().map(horseId => (
-                  <div
-                    key={horseId}
-                    className={`horse-card ${selectedHorses.includes(horseId) ? 'selected' : ''}`}
-                    onClick={() => toggleHorseSelection(horseId)}
-                  >
-                    <div className="horse-sprite">
-                      <img
-                        src={`/horses/horse${horseId}.png`}
-                        alt={`Horse ${horseId}`}
-                        style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }}
-                      />
-                    </div>
-                    <div className="horse-number">#{horseId}</div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                className="race-btn"
-                onClick={handleSelectHorses}
-                disabled={selectedHorses.length !== 4}
-              >
-                CONFIRM HORSE SELECTION ({selectedHorses.length}/4)
-              </button>
-            </>
-          )}
-
-          {/* Show selected horses for both players */}
-          {(((matchData as any)[6]?.length > 0) || ((matchData as any)[7]?.length > 0)) && (
-            <div className="bet-section">
-              <div className="bet-label">SELECTED HORSES</div>
-              {(matchData as any)[6]?.length > 0 && (
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={{ fontSize: '9px', marginBottom: '5px', color: '#4ade80' }}>Creator's Horses:</div>
-                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                    {(matchData as any)[6].map((h: any) => (
-                      <span key={Number(h)} style={{ fontSize: '10px', padding: '5px 10px', background: '#f0fdf4', borderRadius: '5px', border: '1px solid #4ade80' }}>
-                        #{Number(h)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {(matchData as any)[7]?.length > 0 && (
-                <div>
-                  <div style={{ fontSize: '9px', marginBottom: '5px', color: '#f87171' }}>Opponent's Horses:</div>
-                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                    {(matchData as any)[7].map((h: any) => (
-                      <span key={Number(h)} style={{ fontSize: '10px', padding: '5px 10px', background: '#fef2f2', borderRadius: '5px', border: '1px solid #f87171' }}>
-                        #{Number(h)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Execute Race Button - only show if state is ReadyToRace (2) */}
-          {Number((matchData as any)[5]) === 2 && (
-            <button className="race-btn" onClick={handleExecuteRace}>
-              EXECUTE RACE 🏁
-            </button>
-          )}
-
-          {/* Race Results - only show if state is Completed (3) */}
-          {Number((matchData as any)[5]) === 3 && (matchData as any)[9] && (
-            <div className="results-section">
-              <h3>RACE RESULTS</h3>
-              <div className="winners-list">
-                <div className="winner-item">
-                  <span>🥇 1st Place:</span>
-                  <span>Horse #{Number((matchData as any)[9][0])}</span>
-                </div>
-                <div className="winner-item">
-                  <span>🥈 2nd Place:</span>
-                  <span>Horse #{Number((matchData as any)[9][1])}</span>
-                </div>
-                <div className="winner-item">
-                  <span>🥉 3rd Place:</span>
-                  <span>Horse #{Number((matchData as any)[9][2])}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      ) : null}
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

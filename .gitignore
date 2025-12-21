@@ -12,6 +12,24 @@ dist
 dist-ssr
 *.local
 
+# Hardhat files
+cache
+artifacts
+.env
+hardhat.config.ts
+typechain-types
+
+# Test wallets and scripts
+scripts/wallets.js
+scripts/createTestWallets.ts
+scripts/checkAndTransferCelo.ts
+scripts/transferPony.ts
+scripts/showWalletInfo.ts
+scripts/testPVPFlow.ts
+scripts/checkMatchDirect.ts
+scripts/checkUserMatches.ts
+test-wallets.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +40,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+scripts/checkMatch.ts
+scripts/README.md

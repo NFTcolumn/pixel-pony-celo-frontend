@@ -1,0 +1,139 @@
+{
+  "session_start": "2025-12-19T00:00:00Z",
+  "file": "src/components/pvp/CreateMatch.tsx",
+  "original_error": {
+    "line": 451,
+    "message": "Type 'unknown' is not assignable to type 'ReactNode'",
+    "context": "Error occurs when rendering {erc20Section} in JSX"
+  },
+  "observations": [
+    "Error persists across multiple typing strategies (useMemo generic, variable annotation, etc)",
+    "Error line number changes but error message stays the same",
+    "Even without useMemo, TypeScript still infers 'unknown'",
+    "verbatimModuleSyntax is enabled in tsconfig",
+    "ReactNode must be imported with 'import type' due to verbatimModuleSyntax",
+    "Adding explicit return types to helper functions (formatPony, getTokenName) didn't fix it",
+    "Variable is explicitly typed as 'ReactNode' but TypeScript still sees it as 'unknown' at usage site",
+    "HYPOTHESIS: Maybe TypeScript is not properly tracking the type through the conditional assignment"
+  ],
+  "fixes_attempted": [
+    {
+      "timestamp": "2025-12-19T00:00:00Z",
+      "file": "src/components/pvp/CreateMatch.tsx",
+      "line": 451,
+      "error": "Type 'unknown' is not assignable to type 'ReactNode'",
+      "attempts": [
+        {
+          "attempt": 1,
+          "approach": "Changed line 347 from 'const erc20Section = useMemo((): ReactNode => {' to 'const erc20Section: ReactNode = useMemo(() => {'",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Variable type annotation doesn't override useMemo's inferred return type"
+        },
+        {
+          "attempt": 2,
+          "approach": "Changed line 347 to 'const erc20Section = useMemo<ReactNode>(() => {' - using generic type parameter",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Generic type parameter on useMemo still didn't work"
+        },
+        {
+          "attempt": 3,
+          "approach": "Changed line 451 to '{erc20Section as ReactNode}' - type casting at usage site",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Type assertion at usage site didn't work"
+        },
+        {
+          "attempt": 4,
+          "approach": "Changed line 451 to '<>{erc20Section}</>' - wrapping in Fragment",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Fragment wrapper didn't resolve the unknown type"
+        },
+        {
+          "attempt": 5,
+          "approach": "Changed line 347 to 'useMemo<JSX.Element | null>' - using JSX.Element instead of ReactNode",
+          "result": "FAILED - got 'Cannot find namespace JSX' error",
+          "reason": "JSX namespace not available without React import"
+        },
+        {
+          "attempt": 6,
+          "approach": "Changed to 'useMemo<React.ReactElement | null>' with React import added",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still showing unknown type error"
+        },
+        {
+          "attempt": 7,
+          "approach": "Added missing function dependencies to useMemo dependency array",
+          "result": "USER BLOCKED - user interrupted before testing",
+          "reason": "User indicated to learn from llms-full.txt file instead"
+        },
+        {
+          "attempt": 8,
+          "approach": "Added React default import: 'import React, { useState... }'",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still showing unknown type error on line 451"
+        },
+        {
+          "attempt": 9,
+          "approach": "Removed useMemo entirely - changed to 'let erc20Section: ReactNode = null' with if statement",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Error moved to line 450 but still 'Type unknown is not assignable to type ReactNode'",
+          "code_state": "let erc20Section: ReactNode = null; if (tokenType === 'erc20') { erc20Section = (...) }"
+        },
+        {
+          "attempt": 10,
+          "approach": "Changed rendering to conditional: '{tokenType === 'erc20' && erc20Section}'",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still shows unknown type error on line 450",
+          "code_state": "Conditional rendering with &&"
+        },
+        {
+          "attempt": 11,
+          "approach": "Added explicit return type annotations to helper functions (formatPony, getTokenName)",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still shows unknown type error"
+        },
+        {
+          "attempt": 12,
+          "approach": "Tested with simple JSX '<div>TEST</div>' - created erc20Section and erc20SectionOld",
+          "result": "PARTIAL SUCCESS - error moved from line 451 to 457",
+          "reason": "Simple JSX worked, error moved to the complex JSX section",
+          "discovery": "The problem is WITH THE COMPLEX JSX CONTENT, not the variable assignment or useMemo"
+        },
+        {
+          "attempt": 13,
+          "approach": "REFACTORED: Extracted complex JSX into separate component ERC20BetSection.tsx",
+          "result": "FAILED - new errors appeared",
+          "reason": "Type 'unknown' not assignable to ReactNode on line 367, AND tokenBalance also showed as unknown",
+          "discovery": "useReadContract hook is returning 'unknown' for data types - this is a WAGMI typing issue"
+        },
+        {
+          "attempt": 14,
+          "approach": "Added type assertion to useReadContract: 'as { data: bigint | undefined; refetch: () => void }'",
+          "result": "PARTIAL SUCCESS - fixed tokenBalance error",
+          "reason": "One error fixed, but ReactNode error persists on component rendering"
+        },
+        {
+          "attempt": 15,
+          "approach": "Changed conditional rendering to: '{(tokenType === 'erc20' && (<Component />)) || null}'",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still shows unknown type error on line 367"
+        },
+        {
+          "attempt": 16,
+          "approach": "Changed to ternary operator: '{tokenType === 'erc20' ? <Component /> : null}'",
+          "result": "FAILED - didn't fix the issue",
+          "reason": "Still shows unknown type error on line 367",
+          "note": "THIS IS SIMILAR TO ATTEMPT 10 - tried ternary before"
+        }
+      ],
+      "repeated_attempts": [
+        "Ternary operator tried in attempt 10 (inline) and attempt 16 (with component)",
+        "Type assertions tried multiple times with different syntaxes"
+      ],
+      "key_discovery": "useReadContract from wagmi is returning 'unknown' types. This suggests the ABI types are not being inferred properly, which may be affecting ALL return values including JSX rendering."
+    }
+  ]
+}
+      ]
+    }
+  ]
+}
