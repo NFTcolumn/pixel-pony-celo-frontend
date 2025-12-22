@@ -257,6 +257,7 @@ export default function PVP() {
         matchId={matchId}
         onMatchJoined={handleMatchJoined}
         onBack={handleBackToMenu}
+        onCreateAnother={() => setCurrentView('create')}
       />
     )
   }

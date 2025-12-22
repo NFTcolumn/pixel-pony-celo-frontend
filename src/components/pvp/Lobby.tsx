@@ -10,9 +10,10 @@ interface LobbyProps {
   matchId: string
   onMatchJoined: () => void
   onBack: () => void
+  onCreateAnother?: () => void
 }
 
-export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
+export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother }: LobbyProps) {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
@@ -173,10 +174,10 @@ export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
         ← BACK TO MENU
       </button>
 
-      {/* Lobby Header */}
+      {/* Match Info */}
       <div className="match-info">
         <h3 style={{ textAlign: 'center', fontSize: '14px', marginBottom: '20px', color: '#000' }}>
-          🎮 WAITING FOR OPPONENT
+          🎮 MATCH INFO
         </h3>
 
         <div className="info-row">
@@ -238,66 +239,55 @@ export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
         </div>
       )}
 
-      {/* Share Link Section */}
-      <div className="share-section">
-        <div className="share-label">📋 SHARE INVITE LINK</div>
-        <div style={{ fontSize: '8px', textAlign: 'center', color: '#78350f', marginBottom: '10px' }}>
-          Share this link with your opponent to join the match
+      {/* Share Link Section or Create Another Match */}
+      {timeRemaining === 0 ? (
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            className="race-btn"
+            onClick={() => {
+              if (onCreateAnother) {
+                onCreateAnother()
+              } else {
+                onBack()
+              }
+            }}
+            style={{
+              background: '#4ade80',
+              borderColor: '#22c55e',
+              width: '100%'
+            }}
+          >
+            🎮 CREATE ANOTHER MATCH
+          </button>
         </div>
-        <button
-          className="race-btn"
-          onClick={handleCopyLink}
-          style={{
-            background: copySuccess ? '#4ade80' : '#fbbf24',
-            borderColor: copySuccess ? '#22c55e' : '#f59e0b',
-            marginBottom: '10px'
-          }}
-        >
-          {copySuccess ? '✅ COPIED!' : '📋 COPY INVITE LINK'}
-        </button>
-        <div className="share-link-box">
-          <input
-            type="text"
-            className="share-input"
-            value={`${window.location.origin}/pvp?match=${matchId}`}
-            readOnly
-            onClick={(e) => (e.target as HTMLInputElement).select()}
-          />
-        </div>
-      </div>
-
-      {/* Waiting Animation */}
-      <div className="waiting-message">
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-        <div style={{ fontSize: '12px', marginBottom: '10px' }}>
-          Waiting for opponent to join...
-        </div>
-        <div style={{ fontSize: '9px', color: '#666' }}>
-          The match will start automatically when someone joins
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="info-section">
-        <h3>How it works:</h3>
-        <div className="info-list">
-          <div className="info-item">
-            1️⃣ Share the invite link with your opponent
+      ) : (
+        <div className="share-section">
+          <div className="share-label">📋 SHARE INVITE LINK</div>
+          <div style={{ fontSize: '8px', textAlign: 'center', color: '#78350f', marginBottom: '10px' }}>
+            Share this link with your opponent to join the match
           </div>
-          <div className="info-item">
-            2️⃣ They approve the bet amount and join
-          </div>
-          <div className="info-item">
-            3️⃣ Game starts automatically with horse selection
-          </div>
-          <div className="info-item">
-            4️⃣ Each player picks 4 horses alternately
-          </div>
-          <div className="info-item">
-            5️⃣ Race begins when all horses are selected!
+          <button
+            className="race-btn"
+            onClick={handleCopyLink}
+            style={{
+              background: copySuccess ? '#4ade80' : '#fbbf24',
+              borderColor: copySuccess ? '#22c55e' : '#f59e0b',
+              marginBottom: '10px'
+            }}
+          >
+            {copySuccess ? '✅ COPIED!' : '📋 COPY INVITE LINK'}
+          </button>
+          <div className="share-link-box">
+            <input
+              type="text"
+              className="share-input"
+              value={`${window.location.origin}/pvp?match=${matchId}`}
+              readOnly
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
