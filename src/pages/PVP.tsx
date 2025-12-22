@@ -21,6 +21,7 @@ export default function PVP() {
   const [showRaceOverlay, setShowRaceOverlay] = useState(false)
   const [activeMatches, setActiveMatches] = useState<any[]>([])
   const [completedMatches, setCompletedMatches] = useState<any[]>([])
+  const [timedOutMatches, setTimedOutMatches] = useState<any[]>([])
 
   const { writeContract, data: executeHash } = useWriteContract()
   const { isSuccess: raceExecuted } = useWaitForTransactionReceipt({ hash: executeHash })
@@ -51,13 +52,31 @@ export default function PVP() {
     query: { enabled: matchContracts.length > 0 }
   })
 
-  // Separate matches into active and completed
+  // Also read timestamps using 'matches' mapping for pending matches
+  const timestampContracts = userMatches && Array.isArray(userMatches)
+    ? (userMatches as any[]).slice(-10).map((matchId) => ({
+      address: PONYPVP_ADDRESS as `0x${string}`,
+      abi: PONYPVP_ABI as any,
+      functionName: 'matches',
+      args: [matchId],
+      chainId: 42220
+    }))
+    : []
+
+  const { data: timestampData } = useReadContracts({
+    contracts: timestampContracts as any,
+    query: { enabled: timestampContracts.length > 0 }
+  })
+
+  // Separate matches into active, completed, and timed-out
   useEffect(() => {
-    if (!userMatches || !Array.isArray(userMatches) || !matchesData) return
+    if (!userMatches || !Array.isArray(userMatches) || !matchesData || !timestampData) return
 
     const active: any[] = []
     const completed: any[] = []
+    const timedOut: any[] = []
     const recentMatches = (userMatches as any[]).slice(-10)
+    const now = Math.floor(Date.now() / 1000)
 
     matchesData.forEach((match, index) => {
       if (match.status === 'success' && match.result) {
@@ -74,11 +93,18 @@ export default function PVP() {
         const isOpponent = address?.toLowerCase() === opponent.toLowerCase()
         const isParticipant = isCreator || isOpponent
 
-        // Debug log to see actual state and winners
-        console.log(`Match ${matchId.toString().slice(0, 10)}... - State: ${state}, Winners:`, winners, 'HasWinners:', hasWinners, 'IsParticipant:', isParticipant)
-
         // Skip matches where this wallet didn't participate
         if (!isParticipant) return
+
+        // Get timestamp from parallel read (index 14 in 'matches' mapping)
+        const timestampMatch = timestampData[index]
+        const createdAt = timestampMatch?.status === 'success' && timestampMatch.result
+          ? Number((timestampMatch.result as any)[14])
+          : 0
+
+        // Check if timed out (10 minutes = 600 seconds, only for state 0 = Pending)
+        const elapsed = now - createdAt
+        const isTimedOut = state === 0 && elapsed > 600 && createdAt > 0
 
         const matchInfo = {
           id: matchId.toString(),
@@ -92,6 +118,8 @@ export default function PVP() {
         // Note: State 3 (ReadyToRace) with winners = race is complete!
         if (state === 5 || hasWinners) {
           completed.push(matchInfo)
+        } else if (isTimedOut) {
+          timedOut.push(matchInfo)
         } else {
           active.push(matchInfo)
         }
@@ -100,7 +128,8 @@ export default function PVP() {
 
     setActiveMatches(active.reverse())
     setCompletedMatches(completed.reverse())
-  }, [userMatches, matchesData])
+    setTimedOutMatches(timedOut.reverse())
+  }, [userMatches, matchesData, timestampData, address])
 
   // Read match data (if viewing a specific match)
   const { data: matchData, refetch: refetchMatch } = useReadContract({
@@ -466,6 +495,30 @@ export default function PVP() {
                 </button>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Timed Out Matches */}
+      {timedOutMatches.length > 0 && (
+        <div className="info-section" style={{ marginTop: '20px' }}>
+          <h3>⏰ TIMED OUT MATCHES</h3>
+          <div className="info-list">
+            {timedOutMatches.map((match: any, idx) => (
+              <div
+                key={idx}
+                className="info-item"
+                style={{
+                  cursor: 'default',
+                  background: '#fee',
+                  border: '2px solid #f87171'
+                }}
+              >
+                <div style={{ fontSize: '10px', color: '#991b1b' }}>
+                  Match #{match.id.slice(0, 10)}... - Expired (no opponent joined)
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
