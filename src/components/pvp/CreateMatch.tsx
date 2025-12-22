@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import PONYPVP_ABI from '../../PonyPvPABI.json'
 import { ERC20BetSection } from './ERC20BetSection'
@@ -61,6 +61,7 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
 
   const { writeContract, data: hash, reset: resetWrite } = useWriteContract()
   const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+  const publicClient = usePublicClient()
 
   // Read entry fee
   const { data: entryFee } = useReadContract({
@@ -155,44 +156,57 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
   // Handle match creation confirmation
   useEffect(() => {
     const handleMatchCreated = async () => {
-      if (!isConfirmed || !hash || !isCreatingMatch) return
+      if (!isConfirmed || !hash || !isCreatingMatch || !publicClient) return
 
       try {
         setStatusMessage('Match created! Processing...')
 
-        // Wait a moment for blockchain state
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Get the transaction receipt with retries
+        let receipt = null
+        let attempts = 0
+        const maxAttempts = 30
 
-        // Get the transaction receipt to extract matchId
+        while (!receipt && attempts < maxAttempts) {
+          try {
+            receipt = await publicClient.getTransactionReceipt({ hash })
+            console.log('Receipt found!')
+          } catch (err) {
+            attempts++
+            console.log(`Attempt ${attempts}/${maxAttempts} - waiting for receipt...`)
+            setStatusMessage(`Processing... (${attempts}/${maxAttempts})`)
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+
+        if (!receipt) {
+          throw new Error('Transaction receipt not found after waiting.')
+        }
+
+        // Extract matchId from logs
         const { decodeEventLog } = await import('viem')
-        const response = await fetch(`https://explorer.celo.org/mainnet/api?module=proxy&action=eth_getTransactionReceipt&txhash=${hash}`)
-        const data = await response.json()
+        const matchLogs = receipt.logs.filter((log: any) =>
+          log.address.toLowerCase() === PONYPVP_ADDRESS.toLowerCase()
+        )
 
-        if (data.result && data.result.logs) {
-          const matchLogs = data.result.logs.filter((log: any) =>
-            log.address.toLowerCase() === PONYPVP_ADDRESS.toLowerCase()
-          )
+        for (const log of matchLogs) {
+          try {
+            const decodedLog = decodeEventLog({
+              abi: PONYPVP_ABI,
+              data: log.data,
+              topics: log.topics,
+              strict: false
+            })
 
-          for (const log of matchLogs) {
-            try {
-              const decodedLog = decodeEventLog({
-                abi: PONYPVP_ABI,
-                data: log.data,
-                topics: log.topics,
-                strict: false
-              })
-
-              if (decodedLog.eventName === 'MatchCreated') {
-                const matchId = (decodedLog.args as any).matchId as string
-                setStatusMessage('Match created successfully!')
-                setIsCreatingMatch(false)
-                resetWrite()
-                onMatchCreated(matchId)
-                return
-              }
-            } catch (err) {
-              console.log('Could not decode log:', err)
+            if (decodedLog.eventName === 'MatchCreated') {
+              const matchId = (decodedLog.args as any).matchId as string
+              setStatusMessage('Match created successfully!')
+              setIsCreatingMatch(false)
+              resetWrite()
+              onMatchCreated(matchId)
+              return
             }
+          } catch (err) {
+            console.log('Could not decode log:', err)
           }
         }
 
@@ -208,7 +222,7 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
     }
 
     handleMatchCreated()
-  }, [isConfirmed, hash, isCreatingMatch, resetWrite, onMatchCreated])
+  }, [isConfirmed, hash, isCreatingMatch, publicClient, resetWrite, onMatchCreated])
 
   const formatPony = (value: string): string => {
     const num = parseFloat(value)
