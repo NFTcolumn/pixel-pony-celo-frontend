@@ -98,16 +98,18 @@ export default function RaceOverlay({ isOpen, winners, myHorses, matchId, onClos
 
             const announcement = document.getElementById('raceAnnouncement')
             if (announcement) {
-              const myWinningHorses = winners.filter(w => myHorses.includes(w))
+              // Convert winners to numbers for comparison since myHorses is number[]
+              const winnersAsNumbers = winners.map(w => Number(w))
+              const myWinningHorses = winnersAsNumbers.filter(w => myHorses.includes(w))
               const didIWin = myWinningHorses.length > 0
 
               announcement.innerHTML = `
                 RACE COMPLETE!<br>
                 <div style="margin-top: 15px; font-size: 18px;">
                   Winners:<br>
-                  🥇 Pony #${winners[0] + 1}<br>
-                  🥈 Pony #${winners[1] + 1}<br>
-                  🥉 Pony #${winners[2] + 1}
+                  🥇 Pony #${winnersAsNumbers[0] + 1}<br>
+                  🥈 Pony #${winnersAsNumbers[1] + 1}<br>
+                  🥉 Pony #${winnersAsNumbers[2] + 1}
                 </div>
                 <div style="margin-top: 15px; font-size: 24px; font-weight: bold; color: ${didIWin ? '#4ade80' : '#f87171'};">
                   ${didIWin
