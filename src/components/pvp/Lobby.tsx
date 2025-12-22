@@ -23,7 +23,7 @@ export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
   const { data: matchData, refetch: refetchMatch } = useReadContract({
     address: PONYPVP_ADDRESS,
     abi: PONYPVP_ABI,
-    functionName: 'getMatch',
+    functionName: 'matches',
     args: matchId ? [matchId as `0x${string}`] : undefined,
     chainId: 42220,
     query: { enabled: !!matchId }
@@ -44,8 +44,8 @@ export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
   useEffect(() => {
     if (!matchData || !isConnected || hasTransitioned) return
 
-    const state = Number((matchData as any)[5])
-    const opponent = (matchData as any)[1] as string
+    const state = Number((matchData as any)[13])
+    const opponent = (matchData as any)[2] as string
 
     // State 2 = Selecting, State 3 = ReadyToRace, State 4 = Completed
     if (state >= 2) {
@@ -161,10 +161,10 @@ export default function Lobby({ matchId, onMatchJoined, onBack }: LobbyProps) {
     )
   }
 
-  const creator = (matchData as any)[0] as string
-  const betAmount = (matchData as any)[3] as bigint
-  const isNFT = (matchData as any)[4] as boolean
-  const betToken = (matchData as any)[2] as string
+  const creator = (matchData as any)[1] as string
+  const betAmount = (matchData as any)[4] as bigint
+  const isNFT = (matchData as any)[7] as boolean
+  const betToken = (matchData as any)[3] as string
   const isCreator = address?.toLowerCase() === creator.toLowerCase()
 
   return (
