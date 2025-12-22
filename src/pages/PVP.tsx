@@ -22,6 +22,8 @@ export default function PVP() {
   const [activeMatches, setActiveMatches] = useState<any[]>([])
   const [completedMatches, setCompletedMatches] = useState<any[]>([])
   const [timedOutMatches, setTimedOutMatches] = useState<any[]>([])
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [copiedMatchId, setCopiedMatchId] = useState<string | null>(null)
 
   const { writeContract, data: executeHash } = useWriteContract()
   const { isSuccess: raceExecuted } = useWaitForTransactionReceipt({ hash: executeHash })
@@ -504,21 +506,65 @@ export default function PVP() {
         <div className="info-section" style={{ marginTop: '20px' }}>
           <h3>⏰ TIMED OUT MATCHES</h3>
           <div className="info-list">
-            {timedOutMatches.map((match: any, idx) => (
-              <div
-                key={idx}
-                className="info-item"
-                style={{
-                  cursor: 'default',
-                  background: '#fee',
-                  border: '2px solid #f87171'
-                }}
-              >
-                <div style={{ fontSize: '10px', color: '#991b1b' }}>
-                  Match #{match.id.slice(0, 10)}... - Expired (no opponent joined)
-                </div>
-              </div>
-            ))}
+            {timedOutMatches.map((match: any, idx) => {
+              const isCopied = copiedMatchId === match.id
+              return (
+                <button
+                  key={idx}
+                  className="info-item"
+                  onMouseDown={() => {
+                    const timer = setTimeout(() => {
+                      navigator.clipboard.writeText(match.id)
+                      setCopiedMatchId(match.id)
+                      setTimeout(() => setCopiedMatchId(null), 2000)
+                    }, 2000)
+                    setLongPressTimer(timer)
+                  }}
+                  onMouseUp={() => {
+                    if (longPressTimer) {
+                      clearTimeout(longPressTimer)
+                      setLongPressTimer(null)
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (longPressTimer) {
+                      clearTimeout(longPressTimer)
+                      setLongPressTimer(null)
+                    }
+                  }}
+                  onTouchStart={() => {
+                    const timer = setTimeout(() => {
+                      navigator.clipboard.writeText(match.id)
+                      setCopiedMatchId(match.id)
+                      setTimeout(() => setCopiedMatchId(null), 2000)
+                    }, 2000)
+                    setLongPressTimer(timer)
+                  }}
+                  onTouchEnd={() => {
+                    if (longPressTimer) {
+                      clearTimeout(longPressTimer)
+                      setLongPressTimer(null)
+                    }
+                  }}
+                  onClick={() => {
+                    if (!longPressTimer) {
+                      window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+                    }
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    background: isCopied ? '#dcfce7' : '#fee',
+                    border: isCopied ? '2px solid #22c55e' : '2px solid #f87171',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: '10px', color: isCopied ? '#166534' : '#991b1b' }}>
+                    {isCopied ? '✅ Match ID Copied!' : `Match #${match.id.slice(0, 10)}... - Expired (no opponent joined)`}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
