@@ -1,8 +1,21 @@
 import { Link, Outlet } from 'react-router-dom'
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useSwitchChain, useReadContract } from 'wagmi'
 import { useState, useEffect } from 'react'
 import { celo } from 'wagmi/chains'
 import './Layout.css'
+
+const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
+const MIN_PONY_BALANCE = BigInt('1000000000000000000000000000000') // 1 trillion PONY (18 decimals)
+
+const PONY_TOKEN_ABI = [
+  {
+    inputs: [{ name: 'owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+] as const
 
 export default function Layout() {
   const { address, isConnected, chain } = useAccount()
@@ -10,6 +23,18 @@ export default function Layout() {
   const { disconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
   const [showConnectors, setShowConnectors] = useState(false)
+
+  // Check PONY balance for PVP access
+  const { data: ponyBalance } = useReadContract({
+    address: PONY_TOKEN_ADDRESS,
+    abi: PONY_TOKEN_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: 42220,
+    query: { enabled: !!address && isConnected }
+  })
+
+  const hasPVPAccess = ponyBalance && ponyBalance >= MIN_PONY_BALANCE
 
   // Auto-switch to Celo when wallet connects or chain changes
   useEffect(() => {
@@ -42,7 +67,7 @@ export default function Layout() {
           <nav className="main-nav">
             <Link to="/">Home</Link>
             <Link to="/game">Game</Link>
-            <Link to="/pvp">PVP</Link>
+            {hasPVPAccess ? <Link to="/pvp">PVP</Link> : null}
             <Link to="/referrals">Referrals</Link>
             <Link to="/story">Story</Link>
             <Link to="/whitepaper">Whitepaper</Link>

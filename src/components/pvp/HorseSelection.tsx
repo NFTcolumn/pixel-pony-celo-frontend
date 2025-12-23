@@ -125,9 +125,9 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
     }
   }, [matchData, isConnected, hasTriggeredRace])
 
-  // Check whose turn it is
+  // Check whose turn it is and auto-select last 4 if applicable
   useEffect(() => {
-    if (!currentPicker || !address) {
+    if (!currentPicker || !address || !matchData) {
       setIsMyTurn(false)
       return
     }
@@ -137,7 +137,13 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
 
     if (isMe) {
       const myHorses = getMyHorses()
-      if (myHorses.length === 0) {
+      const availableHorses = getRemainingAvailableHorses()
+
+      // Auto-select last 4 horses if only 4 remain
+      if (availableHorses.length === 4 && selectedHorses.length === 0) {
+        setSelectedHorses(availableHorses)
+        setStatusMessage('🎯 Last 4 horses auto-selected! Click CONFIRM to finalize')
+      } else if (myHorses.length === 0) {
         setStatusMessage('🎯 YOUR TURN! Pick 4 horses for your team, then confirm')
       } else {
         setStatusMessage('🎯 YOUR TURN! Pick 4 more horses to complete your team')
@@ -145,7 +151,7 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
     } else {
       setStatusMessage(`⏳ Waiting for opponent to pick their horses...`)
     }
-  }, [currentPicker, address])
+  }, [currentPicker, address, matchData])
 
   // Calculate time remaining
   useEffect(() => {
@@ -281,6 +287,16 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
 
     // Pick 4 horses per turn (2 turns total per player)
     return Math.min(4, horsesRemaining)
+  }
+
+  const getRemainingAvailableHorses = (): number[] => {
+    const available: number[] = []
+    for (let i = 0; i < 16; i++) {
+      if (!isHorseSelected(i)) {
+        available.push(i)
+      }
+    }
+    return available
   }
 
   const getMyHorses = (): number[] => {

@@ -1,0 +1,525 @@
+[
+  {
+    "name": "BASIS_POINTS",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "ENTRY_FEE_RESERVE_BP",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "FIRST_PLACE_BP",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "HORSES_PER_PHASE",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "HORSES_PER_PLAYER",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "HORSE_COUNT",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "MAX_ENTRY_FEE",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "PHASE_TIMEOUT",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "PLATFORM_FEE_BP",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "SECOND_PLACE_BP",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "THIRD_PLACE_BP",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "TOTAL_GAME_TIME",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "cancelMatch",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "claimWinnings",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "createMatch",
+    "type": "payable",
+    "inputs": [
+      {
+        "name": "_betToken",
+        "type": "address"
+      },
+      {
+        "name": "_betAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "_isNFT",
+        "type": "bool"
+      },
+      {
+        "name": "_nftTokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "matchId",
+        "type": "bytes32"
+      }
+    ]
+  },
+  {
+    "name": "devWallet",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "entryFee",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "executeRace",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "getClaimableAmount",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      },
+      {
+        "name": "_player",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "getCurrentPicker",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "getMatch",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "name": "opponent",
+        "type": "address"
+      },
+      {
+        "name": "betToken",
+        "type": "address"
+      },
+      {
+        "name": "betAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "isNFT",
+        "type": "bool"
+      },
+      {
+        "name": "state",
+        "type": "uint8"
+      },
+      {
+        "name": "creatorHorses",
+        "type": "uint8[]"
+      },
+      {
+        "name": "opponentHorses",
+        "type": "uint8[]"
+      },
+      {
+        "name": "firstPicker",
+        "type": "address"
+      },
+      {
+        "name": "winners",
+        "type": "uint256[3]"
+      }
+    ]
+  },
+  {
+    "name": "getUserMatches",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ]
+  },
+  {
+    "name": "joinMatch",
+    "type": "payable",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      },
+      {
+        "name": "_opponentNftTokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "marketingWallet",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "matches",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "matchId",
+        "type": "bytes32"
+      },
+      {
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "name": "opponent",
+        "type": "address"
+      },
+      {
+        "name": "betToken",
+        "type": "address"
+      },
+      {
+        "name": "betAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "nftTokenId",
+        "type": "uint256"
+      },
+      {
+        "name": "opponentNftTokenId",
+        "type": "uint256"
+      },
+      {
+        "name": "isNFT",
+        "type": "bool"
+      },
+      {
+        "name": "totalPot",
+        "type": "uint256"
+      },
+      {
+        "name": "gameStartTime",
+        "type": "uint256"
+      },
+      {
+        "name": "lastPickTime",
+        "type": "uint256"
+      },
+      {
+        "name": "firstPicker",
+        "type": "address"
+      },
+      {
+        "name": "pickCount",
+        "type": "uint8"
+      },
+      {
+        "name": "state",
+        "type": "uint8"
+      },
+      {
+        "name": "createdAt",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "owner",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "name": "renounceOwnership",
+    "type": "nonpayable",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "selectHorses",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_matchId",
+        "type": "bytes32"
+      },
+      {
+        "name": "_horseIds",
+        "type": "uint8[]"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "setEntryFee",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_newFee",
+        "type": "uint256"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "setWallets",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "_devWallet",
+        "type": "address"
+      },
+      {
+        "name": "_marketingWallet",
+        "type": "address"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "totalMatches",
+    "type": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "name": "transferOwnership",
+    "type": "nonpayable",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "userMatches",
+    "type": "view",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      },
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ]
+  },
+  {
+    "name": "withdrawFees",
+    "type": "nonpayable",
+    "inputs": [],
+    "outputs": []
+  }
+]
