@@ -19,9 +19,22 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [copySuccess, setCopySuccess] = useState(false)
   const [hasTransitioned, setHasTransitioned] = useState(false)
+  const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [celoscanTimer, setCeloscanTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [copiedMatchId, setCopiedMatchId] = useState(false)
 
   // Read match data
   const { data: matchData, refetch: refetchMatch } = useReadContract({
+    address: PONYPVP_ADDRESS,
+    abi: PONYPVP_ABI,
+    functionName: 'getMatch',
+    args: matchId ? [matchId as `0x${string}`] : undefined,
+    chainId: 42220,
+    query: { enabled: !!matchId }
+  })
+
+  // Read timestamp from matches mapping (needed for timer)
+  const { data: matchDetails } = useReadContract({
     address: PONYPVP_ADDRESS,
     abi: PONYPVP_ABI,
     functionName: 'matches',
@@ -41,25 +54,32 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
     return () => clearInterval(interval)
   }, [matchId, isConnected, refetchMatch])
 
-  // Check if match state changed to Active (opponent joined)
+  // Check if match state changed to Selecting or later
   useEffect(() => {
-    if (!matchData || !isConnected || hasTransitioned) return
+    if (!matchData || !isConnected || hasTransitioned || !address) return
 
-    const state = Number((matchData as any)[13])
-    const opponent = (matchData as any)[2] as string
+    const state = Number((matchData as any)[5])
+    const opponent = (matchData as any)[1] as string
+    const firstPicker = (matchData as any)[8] as string
+    const isOpponentJoined = opponent !== '0x0000000000000000000000000000000000000000'
+    const isFirstPicker = address.toLowerCase() === firstPicker.toLowerCase()
 
-    // State 2 = Selecting, State 3 = ReadyToRace, State 4 = Completed
-    if (state >= 2) {
-      // Match already started or completed, go to selection view
-      setHasTransitioned(true)
-      onMatchJoined()
+    // State 1 = Joined (opponent joined, ready to start)
+    // State 2 = Selecting (first pick made)
+    // For first picker: wait for manual button click, only auto-transition at state 2+
+    // For opponent: auto-transition at state 1+ (when opponent joins)
+    if (isOpponentJoined) {
+      if (isFirstPicker && state >= 2) {
+        // First picker - only transition if picking has started
+        setHasTransitioned(true)
+        onMatchJoined()
+      } else if (!isFirstPicker && state >= 1) {
+        // Opponent - transition immediately when match is joined
+        setHasTransitioned(true)
+        onMatchJoined()
+      }
     }
-    // State 1 = Joined (opponent joined, waiting for first picker)
-    else if (state === 1 && opponent !== '0x0000000000000000000000000000000000000000') {
-      setHasTransitioned(true)
-      onMatchJoined()
-    }
-  }, [matchData, isConnected, hasTransitioned, onMatchJoined])
+  }, [matchData, isConnected, hasTransitioned, onMatchJoined, address])
 
   // Listen for MatchJoined event
   useEffect(() => {
@@ -75,13 +95,9 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
           onLogs: (logs) => {
             logs.forEach((log: any) => {
               const eventMatchId = (log.args as any).matchId
-              if (eventMatchId === matchId && !hasTransitioned) {
+              if (eventMatchId === matchId) {
                 console.log('Match joined event detected!')
                 refetchMatch()
-                setHasTransitioned(true)
-                setTimeout(() => {
-                  onMatchJoined()
-                }, 1000)
               }
             })
           }
@@ -104,9 +120,9 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
 
   // Calculate time remaining (10 minutes = 600 seconds)
   useEffect(() => {
-    if (!matchData) return
+    if (!matchDetails) return
 
-    const createdAt = Number((matchData as any)[14])
+    const createdAt = Number((matchDetails as any)[14])
     if (createdAt === 0) return
 
     const updateTimer = () => {
@@ -126,7 +142,7 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
     const interval = setInterval(updateTimer, 1000)
 
     return () => clearInterval(interval)
-  }, [matchData])
+  }, [matchDetails])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -162,11 +178,17 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
     )
   }
 
-  const creator = (matchData as any)[1] as string
-  const betAmount = (matchData as any)[4] as bigint
-  const isNFT = (matchData as any)[7] as boolean
-  const betToken = (matchData as any)[3] as string
+  const creator = (matchData as any)[0] as string
+  const opponent = (matchData as any)[1] as string
+  const betToken = (matchData as any)[2] as string
+  const betAmount = (matchData as any)[3] as bigint
+  const isNFT = (matchData as any)[4] as boolean
+  const state = Number((matchData as any)[5])
+  const firstPicker = (matchData as any)[8] as string
   const isCreator = address?.toLowerCase() === creator.toLowerCase()
+  const isOpponentJoined = opponent !== '0x0000000000000000000000000000000000000000'
+  const isFirstPicker = address?.toLowerCase() === firstPicker.toLowerCase()
+  const showStartButton = state === 1 && isOpponentJoined && isFirstPicker
 
   return (
     <div className="container">
@@ -177,7 +199,76 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
       {/* Match Info */}
       <div className="match-info">
         <h3 style={{ textAlign: 'center', fontSize: '14px', marginBottom: '20px', color: '#000' }}>
-          🎮 MATCH INFO
+          <span
+            onMouseDown={() => {
+              // Copy at 2 seconds
+              const copyTmr = setTimeout(() => {
+                navigator.clipboard.writeText(matchId)
+                setCopiedMatchId(true)
+                setTimeout(() => setCopiedMatchId(false), 2000)
+              }, 2000)
+              setCopyTimer(copyTmr)
+
+              // Open celoscan at 4 seconds
+              const celoTmr = setTimeout(() => {
+                window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+              }, 4000)
+              setCeloscanTimer(celoTmr)
+            }}
+            onMouseUp={() => {
+              if (copyTimer) {
+                clearTimeout(copyTimer)
+                setCopyTimer(null)
+              }
+              if (celoscanTimer) {
+                clearTimeout(celoscanTimer)
+                setCeloscanTimer(null)
+              }
+            }}
+            onMouseLeave={() => {
+              if (copyTimer) {
+                clearTimeout(copyTimer)
+                setCopyTimer(null)
+              }
+              if (celoscanTimer) {
+                clearTimeout(celoscanTimer)
+                setCeloscanTimer(null)
+              }
+            }}
+            onTouchStart={() => {
+              // Copy at 2 seconds
+              const copyTmr = setTimeout(() => {
+                navigator.clipboard.writeText(matchId)
+                setCopiedMatchId(true)
+                setTimeout(() => setCopiedMatchId(false), 2000)
+              }, 2000)
+              setCopyTimer(copyTmr)
+
+              // Open celoscan at 4 seconds
+              const celoTmr = setTimeout(() => {
+                window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+              }, 4000)
+              setCeloscanTimer(celoTmr)
+            }}
+            onTouchEnd={() => {
+              if (copyTimer) {
+                clearTimeout(copyTimer)
+                setCopyTimer(null)
+              }
+              if (celoscanTimer) {
+                clearTimeout(celoscanTimer)
+                setCeloscanTimer(null)
+              }
+            }}
+            style={{
+              cursor: 'pointer',
+              userSelect: 'none',
+              color: copiedMatchId ? '#22c55e' : 'inherit'
+            }}
+            title={copiedMatchId ? 'Match ID Copied!' : 'Hold for options'}
+          >
+            {copiedMatchId ? '✅' : '🎮'}
+          </span> MATCH INFO
         </h3>
 
         <div className="info-row">
@@ -201,7 +292,66 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
             }
           </span>
         </div>
+
+        {/* Show opponent info if joined */}
+        {isOpponentJoined && (
+          <div className="info-row" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '10px', marginTop: '10px' }}>
+            <span>Opponent:</span>
+            <span style={{ fontSize: '8px', color: '#22c55e', fontWeight: 'bold' }}>
+              ✅ {opponent.slice(0, 6)}...{opponent.slice(-4)}
+            </span>
+          </div>
+        )}
+
+        {/* Show first picker info if opponent joined */}
+        {isOpponentJoined && (
+          <div className="info-row">
+            <span>First Picker:</span>
+            <span style={{ fontSize: '9px', fontWeight: 'bold', color: isFirstPicker ? '#22c55e' : '#f59e0b' }}>
+              {isFirstPicker ? '🟢 YOU' : '🔴 OPPONENT'}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Opponent Joined - Ready to Start */}
+      {showStartButton && (
+        <div className="match-info" style={{ background: '#dcfce7', border: '2px solid #22c55e' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#166534', fontWeight: 'bold', marginBottom: '10px' }}>
+              ✅ OPPONENT JOINED!
+            </div>
+            <div style={{ fontSize: '11px', color: '#166534', marginBottom: '15px' }}>
+              You are the first picker. Click below to start horse selection!
+            </div>
+            <button
+              className="race-btn"
+              onClick={() => onMatchJoined()}
+              style={{
+                background: '#22c55e',
+                borderColor: '#16a34a',
+                width: '100%'
+              }}
+            >
+              🐴 START HORSE SELECTION
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting for opponent's turn */}
+      {state === 1 && isOpponentJoined && !isFirstPicker && (
+        <div className="match-info" style={{ background: '#fef3c7', border: '2px solid #f59e0b' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#92400e', fontWeight: 'bold', marginBottom: '10px' }}>
+              ✅ OPPONENT JOINED!
+            </div>
+            <div style={{ fontSize: '11px', color: '#92400e' }}>
+              Waiting for opponent (first picker) to start horse selection...
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Countdown Timer */}
       {timeRemaining !== null && (

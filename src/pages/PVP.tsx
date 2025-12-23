@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { formatEther } from 'viem'
+import { Link } from 'react-router-dom'
 import '../PVP.css'
 import PONYPVP_ABI from '../PonyPvPABI.json'
 import CreateMatch from '../components/pvp/CreateMatch'
@@ -9,11 +11,35 @@ import HorseSelection from '../components/pvp/HorseSelection'
 import RaceOverlay from '../components/pvp/RaceOverlay'
 
 const PONYPVP_ADDRESS = '0x739331647Fa2dBefe2c7A2E453A26Ee9f4a9965A'
+const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
+const MIN_PONY_BALANCE = BigInt('1000000000000000000000000000000') // 1 trillion PONY (18 decimals)
+
+const PONY_TOKEN_ABI = [
+  {
+    inputs: [{ name: 'owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+] as const
 
 type ViewType = 'menu' | 'create' | 'lobby' | 'join' | 'selection' | 'race'
 
 export default function PVP() {
   const { address, isConnected } = useAccount()
+
+  // Check PONY balance for access control
+  const { data: ponyBalance } = useReadContract({
+    address: PONY_TOKEN_ADDRESS,
+    abi: PONY_TOKEN_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: 42220,
+    query: { enabled: !!address && isConnected }
+  })
+
+  const hasPVPAccess = ponyBalance && ponyBalance >= MIN_PONY_BALANCE
   const [currentView, setCurrentView] = useState<ViewType>('menu')
   const [matchId, setMatchId] = useState('')
   const [raceWinners, setRaceWinners] = useState<number[]>([])
@@ -22,7 +48,8 @@ export default function PVP() {
   const [activeMatches, setActiveMatches] = useState<any[]>([])
   const [completedMatches, setCompletedMatches] = useState<any[]>([])
   const [timedOutMatches, setTimedOutMatches] = useState<any[]>([])
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [celoscanTimer, setCeloscanTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [copiedMatchId, setCopiedMatchId] = useState<string | null>(null)
 
   const { writeContract, data: executeHash } = useWriteContract()
@@ -51,7 +78,7 @@ export default function PVP() {
 
   const { data: matchesData } = useReadContracts({
     contracts: matchContracts as any,
-    query: { enabled: matchContracts.length > 0 }
+    query: { enabled: matchContracts.length > 0, refetchInterval: 5000 }
   })
 
   // Also read timestamps using 'matches' mapping for pending matches
@@ -114,15 +141,20 @@ export default function PVP() {
           data: match.result
         }
 
+        console.log(`Match ${matchId.toString().slice(0, 10)}: state=${state}, hasWinners=${hasWinners}, isTimedOut=${isTimedOut}`)
+
         // Match is completed if:
-        // 1. State is 5 (Cancelled)
-        // 2. OR if winners are set (race was executed - executeRace distributes winnings immediately)
-        // Note: State 3 (ReadyToRace) with winners = race is complete!
-        if (state === 5 || hasWinners) {
+        // 1. State is 4 (Completed) - includes canceled matches and finished races
+        // 2. State is 5 (Cancelled) - explicitly canceled
+        // 3. OR if winners are set (race was executed)
+        if (state === 4 || state === 5 || hasWinners) {
+          console.log(`  -> COMPLETED (state=${state}, hasWinners=${hasWinners})`)
           completed.push(matchInfo)
         } else if (isTimedOut) {
+          console.log(`  -> TIMED OUT`)
           timedOut.push(matchInfo)
         } else {
+          console.log(`  -> ACTIVE`)
           active.push(matchInfo)
         }
       }
@@ -258,6 +290,25 @@ export default function PVP() {
     )
   }
 
+  // Check PONY balance requirement - silently block access
+  if (!hasPVPAccess) {
+    return (
+      <div className="container">
+        <div className="match-info" style={{ background: '#fef3c7', border: '2px solid #f59e0b', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#92400e' }}>
+            🔒 PVP ACCESS RESTRICTED
+          </h2>
+          <div style={{ fontSize: '12px', color: '#92400e', marginBottom: '15px' }}>
+            You need at least <strong>1 Trillion PONY</strong> to access PVP mode
+          </div>
+          <Link to="/buy" className="race-btn" style={{ display: 'inline-block', textDecoration: 'none', background: '#f59e0b', borderColor: '#d97706' }}>
+            🛒 BUY PONY TOKENS
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Show race overlay
   if (currentView === 'race') {
     return (
@@ -381,22 +432,22 @@ export default function PVP() {
                   // Route to correct view based on state
                   if (match.state === 0) {
                     setCurrentView('lobby') // Created - waiting for opponent
-                  } else if (match.state === 1) {
-                    setCurrentView('lobby') // Joined - waiting for first pick
-                  } else if (match.state === 2 || match.state === 3) {
-                    setCurrentView('selection') // Selecting or ReadyToRace
+                  } else if (match.state === 1 || match.state === 2 || match.state === 3) {
+                    setCurrentView('selection') // Joined, Selecting, or ReadyToRace - go to selection
                   }
                 }}
                 style={{ cursor: 'pointer', textAlign: 'left' }}
               >
-                Match #{match.id.slice(0, 10)}...
-                <span style={{ fontSize: '10px', color: '#666', marginLeft: '8px' }}>
-                  {match.state === 0 ? '⏳ Waiting' :
-                    match.state === 1 ? '🎯 Joined' :
-                      match.state === 2 ? '🐴 Selecting' :
-                        match.state === 3 ? '🏁 Ready' :
-                        '❓ Unknown'}
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <span>Match #{match.id.slice(0, 10)}...</span>
+                  <span style={{ fontSize: '10px', color: '#666' }}>
+                    {match.state === 0 ? '⏳ Waiting' :
+                      match.state === 1 ? '🎯 Joined' :
+                        match.state === 2 ? '🐴 Selecting' :
+                          match.state === 3 ? '🏁 Ready' :
+                          '❓ Unknown'}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
@@ -410,6 +461,10 @@ export default function PVP() {
           <div className="info-list">
             {completedMatches.map((match: any, idx) => {
               const winners = (match.data as any)[9] as number[]
+              const hasValidWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
+              // State 4 (Completed) without winners = canceled
+              // State 5 = explicitly canceled (though we're seeing state 4 for cancels)
+              const isCanceled = (match.state === 4 && !hasValidWinners) || match.state === 5
               const creator = (match.data as any)[0] as string
               const creatorHorses = (match.data as any)[6] as number[]
               const opponentHorses = (match.data as any)[7] as number[]
@@ -418,14 +473,41 @@ export default function PVP() {
               const isCreator = address?.toLowerCase() === creator.toLowerCase()
               const myHorses = isCreator ? creatorHorses : opponentHorses
 
+              // If canceled, show canceled status
+              if (isCanceled) {
+                return (
+                  <button
+                    key={idx}
+                    className="info-item"
+                    onClick={() => {
+                      // Don't do anything for canceled matches
+                    }}
+                    style={{
+                      cursor: 'default',
+                      textAlign: 'left',
+                      background: '#f3f4f6',
+                      borderColor: '#9ca3af'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <span>Match #{match.id.slice(0, 10)}...</span>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: '#6b7280',
+                      }}>
+                        ❌ CANCELED
+                      </span>
+                    </div>
+                  </button>
+                )
+              }
+
               // Calculate actual winnings based on positions won
               const pot = betAmount * 2n
               const afterFee = pot * 9750n / 10000n // After 2.5% fee
 
               let myWinnings = 0n
-
-              // Check if winners are properly set (not just [0,0,0])
-              const hasValidWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
               // Check each position (convert BigInt winners to numbers for comparison)
               if (hasValidWinners) {
@@ -513,42 +595,63 @@ export default function PVP() {
                   key={idx}
                   className="info-item"
                   onMouseDown={() => {
-                    const timer = setTimeout(() => {
+                    // Copy at 2 seconds
+                    const copyTmr = setTimeout(() => {
                       navigator.clipboard.writeText(match.id)
                       setCopiedMatchId(match.id)
                       setTimeout(() => setCopiedMatchId(null), 2000)
                     }, 2000)
-                    setLongPressTimer(timer)
+                    setCopyTimer(copyTmr)
+
+                    // Open celoscan at 4 seconds
+                    const celoTmr = setTimeout(() => {
+                      window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+                    }, 4000)
+                    setCeloscanTimer(celoTmr)
                   }}
                   onMouseUp={() => {
-                    if (longPressTimer) {
-                      clearTimeout(longPressTimer)
-                      setLongPressTimer(null)
+                    if (copyTimer) {
+                      clearTimeout(copyTimer)
+                      setCopyTimer(null)
+                    }
+                    if (celoscanTimer) {
+                      clearTimeout(celoscanTimer)
+                      setCeloscanTimer(null)
                     }
                   }}
                   onMouseLeave={() => {
-                    if (longPressTimer) {
-                      clearTimeout(longPressTimer)
-                      setLongPressTimer(null)
+                    if (copyTimer) {
+                      clearTimeout(copyTimer)
+                      setCopyTimer(null)
+                    }
+                    if (celoscanTimer) {
+                      clearTimeout(celoscanTimer)
+                      setCeloscanTimer(null)
                     }
                   }}
                   onTouchStart={() => {
-                    const timer = setTimeout(() => {
+                    // Copy at 2 seconds
+                    const copyTmr = setTimeout(() => {
                       navigator.clipboard.writeText(match.id)
                       setCopiedMatchId(match.id)
                       setTimeout(() => setCopiedMatchId(null), 2000)
                     }, 2000)
-                    setLongPressTimer(timer)
+                    setCopyTimer(copyTmr)
+
+                    // Open celoscan at 4 seconds
+                    const celoTmr = setTimeout(() => {
+                      window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+                    }, 4000)
+                    setCeloscanTimer(celoTmr)
                   }}
                   onTouchEnd={() => {
-                    if (longPressTimer) {
-                      clearTimeout(longPressTimer)
-                      setLongPressTimer(null)
+                    if (copyTimer) {
+                      clearTimeout(copyTimer)
+                      setCopyTimer(null)
                     }
-                  }}
-                  onClick={() => {
-                    if (!longPressTimer) {
-                      window.open(`https://celoscan.io/address/${PONYPVP_ADDRESS}#code`, '_blank')
+                    if (celoscanTimer) {
+                      clearTimeout(celoscanTimer)
+                      setCeloscanTimer(null)
                     }
                   }}
                   style={{
