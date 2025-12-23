@@ -20,6 +20,16 @@ export default function RaceOverlay({ isOpen, winners, myHorses, matchId, onClos
   const { writeContract, data: claimHash } = useWriteContract()
   const { isSuccess: claimConfirmed } = useWaitForTransactionReceipt({ hash: claimHash })
 
+  // Validate that we have proper data before rendering
+  const hasValidWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
+  const hasValidHorses = myHorses && myHorses.length > 0
+
+  // If data is invalid, don't render the overlay
+  if (!hasValidWinners || !hasValidHorses) {
+    console.error('RaceOverlay: Invalid data', { winners, myHorses })
+    return null
+  }
+
   const handleClaimWinnings = () => {
     if (isClaiming || hasClaimed) return
 

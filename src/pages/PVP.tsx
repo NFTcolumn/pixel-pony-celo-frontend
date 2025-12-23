@@ -206,7 +206,7 @@ export default function PVP() {
     const winners = (matchData as any)[9] as number[]
 
     // State 3 = ReadyToRace
-    const hasWinners = winners && winners.length === 3 && winners[0] !== 0
+    const hasWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
     // If no winners yet, execute race automatically
     if (state === 3 && !hasWinners && currentView === 'selection' && !executeHash) {
@@ -214,10 +214,13 @@ export default function PVP() {
       handleAllHorsesSelected()
     }
 
-    // If winners are set, race is complete (executeRace already distributed winnings)
-    if (hasWinners && currentView === 'selection') {
+    // ONLY show race overlay if:
+    // 1. We have valid winners (race was executed)
+    // 2. Match state is 4 (Completed) - this ensures race was fully executed
+    // 3. We're currently in the selection view (to avoid showing multiple times)
+    if (hasWinners && state === 4 && currentView === 'selection') {
       console.log('Race completed! Winners:', winners)
-      setRaceWinners(winners)
+      setRaceWinners(Array.from(winners).map(w => Number(w)))
 
       // Get my horses
       const creator = (matchData as any)[0] as string
@@ -225,7 +228,7 @@ export default function PVP() {
       const opponentHorses = (matchData as any)[7] as number[]
       const isCreator = address?.toLowerCase() === creator.toLowerCase()
 
-      setMyHorses(isCreator ? creatorHorses : opponentHorses)
+      setMyHorses(isCreator ? Array.from(creatorHorses) : Array.from(opponentHorses))
 
       // Show race overlay
       setShowRaceOverlay(true)
