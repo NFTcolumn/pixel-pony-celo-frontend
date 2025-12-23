@@ -246,14 +246,14 @@ export default function PVP() {
     setCurrentView('selection')
   }
 
-  const handleAllHorsesSelected = async () => {
+  const handleAllHorsesSelected = () => {
     if (!matchId) return
 
     try {
       console.log('All horses selected! Executing race...')
 
-      // Execute the race on-chain
-      await writeContract({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'executeRace',

@@ -338,6 +338,8 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
   const firstPicker = (matchData as any)[8] as string
   const creator = (matchData as any)[0] as string
   const opponent = (matchData as any)[1] as string
+  const state = Number((matchData as any)[5])
+  const isReadyToRace = state === 3 // All horses selected, ready to execute race
 
   return (
     <div className="container">
@@ -437,8 +439,35 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
         })}
       </div>
 
-      {/* Confirm Button */}
-      {isMyTurn && (
+      {/* Execute Race Button - Show when all horses are selected */}
+      {isReadyToRace && (
+        <div className="match-info" style={{ background: '#dcfce7', border: '2px solid #22c55e', marginTop: '20px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#166534', fontWeight: 'bold', marginBottom: '10px' }}>
+              ✅ ALL HORSES SELECTED!
+            </div>
+            <div style={{ fontSize: '11px', color: '#166534', marginBottom: '15px' }}>
+              Ready to race! Click below to execute the race and see who wins!
+            </div>
+            <button
+              className="race-btn"
+              onClick={onAllHorsesSelected}
+              disabled={hasTriggeredRace}
+              style={{
+                background: '#22c55e',
+                borderColor: '#16a34a',
+                width: '100%',
+                opacity: hasTriggeredRace ? 0.5 : 1
+              }}
+            >
+              {hasTriggeredRace ? '⏳ EXECUTING RACE...' : '🏁 EXECUTE RACE'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Button - Only show when it's your turn and not ready to race yet */}
+      {isMyTurn && !isReadyToRace && (
         <button
           className="race-btn"
           onClick={handleSubmitSelection}
