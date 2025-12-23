@@ -235,17 +235,18 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
     }
 
     try {
-      setStatusMessage('Submitting selection...')
-      setIsSubmitting(true)
-
-      await writeContract({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'selectHorses',
         args: [matchId as `0x${string}`, selectedHorses.map(h => h)],
         chainId: 42220
       })
-      setStatusMessage('Selection sent! Waiting for confirmation...')
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Submitting selection...')
+      setIsSubmitting(true)
     } catch (error) {
       console.error('Error submitting selection:', error)
       setStatusMessage('Failed to submit selection')

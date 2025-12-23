@@ -20,18 +20,21 @@ export default function RaceOverlay({ isOpen, winners, myHorses, matchId, onClos
   const { writeContract, data: claimHash } = useWriteContract()
   const { isSuccess: claimConfirmed } = useWaitForTransactionReceipt({ hash: claimHash })
 
-  const handleClaimWinnings = async () => {
+  const handleClaimWinnings = () => {
     if (isClaiming || hasClaimed) return
 
     try {
-      setIsClaiming(true)
-      await writeContract({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'claimWinnings',
         args: [matchId as `0x${string}`],
         chainId: 42220
       })
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setIsClaiming(true)
     } catch (error) {
       console.error('Error claiming winnings:', error)
       setIsClaiming(false)

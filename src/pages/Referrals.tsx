@@ -249,16 +249,19 @@ export default function Referrals() {
     setTimeout(() => setCopySuccess(false), 2000)
   }
 
-  const handleClaim = async () => {
+  const handleClaim = () => {
     if (!address) return
-    setStatusMessage('Claiming rewards...')
     try {
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
       writeContract({
         address: REFERRAL_ADDRESS,
         abi: REFERRAL_ABI,
         functionName: 'claim',
         chainId: 42220
       })
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Claiming rewards...')
     } catch (error) {
       console.error('Error claiming:', error)
       setStatusMessage('Failed to claim rewards')

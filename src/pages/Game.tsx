@@ -224,11 +224,10 @@ export default function Game() {
     }
   }
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (!selectedBet) return
     try {
-      setStatusMessage('Approving PONY tokens...')
-      setApprovalHash(null)
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
       writeContract({
         address: PONY_TOKEN_ADDRESS,
         abi: PONY_TOKEN_ABI,
@@ -236,13 +235,16 @@ export default function Game() {
         args: [PIXEL_PONY_ADDRESS, selectedBet],
         chainId: 42220
       })
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Approving PONY tokens...')
+      setApprovalHash(null)
     } catch (error) {
       console.error('Approval error:', error)
       setStatusMessage('Approval failed')
     }
   }
 
-  const handleRace = async () => {
+  const handleRace = () => {
     if (selectedHorse === null || !selectedBet || !baseFee || isRacing) return
 
     // Check if user has enough CELO (baseFee is 1 CELO, gas on CELO is ~0.0001)
@@ -256,10 +258,6 @@ export default function Game() {
       }
     }
 
-    setStatusMessage('Estimating gas...')
-    setIsRacing(true)
-    setRaceHash(null)
-
     console.log('Racing with params:')
     console.log('  - Horse ID:', selectedHorse)
     console.log('  - Bet Amount:', selectedBet.toString(), 'wei')
@@ -269,32 +267,21 @@ export default function Game() {
     console.log('  - User ETH Balance:', ethBalanceData ? formatEther(ethBalanceData.value) : 'unknown')
 
     try {
-      // Estimate gas for the transaction
-      const estimatedGas = await publicClient.estimateContractGas({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      // Wagmi will handle gas estimation automatically
+      writeContract({
         address: PIXEL_PONY_ADDRESS,
         abi: PIXEL_PONY_ABI,
         functionName: 'placeBetAndRace',
         args: [BigInt(selectedHorse), selectedBet],
         value: baseFee as bigint,
-        account: address
-      })
-
-      // Add 50% buffer for reentrancy guard overhead
-      const gasWithBuffer = (estimatedGas * 150n) / 100n
-      console.log('  - Estimated gas:', estimatedGas.toString())
-      console.log('  - Gas with 50% buffer:', gasWithBuffer.toString())
-
-      setStatusMessage('Sending race transaction...')
-
-      await writeContract({
-        address: PIXEL_PONY_ADDRESS,
-        abi: PIXEL_PONY_ABI,
-        functionName: 'placeBetAndRace',
-        args: [BigInt(selectedHorse), selectedBet],
-        value: baseFee as bigint,
-        gas: gasWithBuffer,
         chainId: 42220
       })
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Sending race transaction...')
+      setIsRacing(true)
+      setRaceHash(null)
     } catch (error) {
       console.error('Race error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Transaction failed'

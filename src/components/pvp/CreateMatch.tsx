@@ -283,7 +283,7 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
     }
   }
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (tokenType === 'nft') {
       setStatusMessage('NFT approval: Use your wallet to approve the NFT directly, then create match')
       return
@@ -292,23 +292,27 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
 
     try {
       const tokenAddress = getTokenAddress()
-      setStatusMessage('Approving tokens...')
-      setIsApprovingToken(true)
-      setApprovalHash(null)
-      await writeContract({
+
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: tokenAddress as `0x${string}`,
         abi: PONY_TOKEN_ABI,
         functionName: 'approve',
         args: [PONYPVP_ADDRESS, selectedBet],
         chainId: 42220
       })
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Approving tokens...')
+      setIsApprovingToken(true)
+      setApprovalHash(null)
     } catch (error) {
       setStatusMessage('Approval failed')
       setIsApprovingToken(false)
     }
   }
 
-  const handleCreateMatch = async () => {
+  const handleCreateMatch = () => {
     if (!entryFee) return
 
     // Validation
@@ -326,15 +330,13 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
     }
 
     try {
-      setStatusMessage('Creating match...')
-      setIsCreatingMatch(true)
-
       const tokenAddress = getTokenAddress()
       const isNFT = tokenType === 'nft'
       const betAmount = isNFT ? BigInt(0) : selectedBet!
       const tokenId = isNFT ? BigInt(nftTokenId) : BigInt(0)
 
-      await writeContract({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'createMatch',
@@ -342,7 +344,10 @@ export default function CreateMatch({ onMatchCreated, onBack }: CreateMatchProps
         value: entryFee as bigint,
         chainId: 42220
       })
-      setStatusMessage('Match transaction sent! Waiting for confirmation...')
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Creating match...')
+      setIsCreatingMatch(true)
     } catch (error) {
       setStatusMessage('Failed to create match')
       setIsCreatingMatch(false)

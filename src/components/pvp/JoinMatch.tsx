@@ -149,30 +149,32 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
     return value
   }
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (!matchData) return
 
     const betAmount = (matchData as any)[3] as bigint
     const tokenAddress = (matchData as any)[2] as `0x${string}`
 
     try {
-      setStatusMessage('Opening wallet to approve tokens...')
-      setIsApprovingToken(true)
-      setApprovalHash(null)
-      
       console.log('Attempting to approve:', {
         tokenAddress,
         spender: PONYPVP_ADDRESS,
         amount: betAmount.toString()
       })
-      
-      await writeContract({
+
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: tokenAddress,
         abi: PONY_TOKEN_ABI,
         functionName: 'approve',
         args: [PONYPVP_ADDRESS, betAmount],
         chainId: 42220
       })
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Opening wallet to approve tokens...')
+      setIsApprovingToken(true)
+      setApprovalHash(null)
     } catch (error: any) {
       console.error('Approval error:', error)
       // Check if user rejected
@@ -186,7 +188,7 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
     }
   }
 
-  const handleJoinMatch = async () => {
+  const handleJoinMatch = () => {
     if (!entryFee || !matchData) return
 
     const isNFT = (matchData as any)[4]
@@ -197,10 +199,8 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
     }
 
     try {
-      setStatusMessage('Joining match...')
-      setIsJoining(true)
-
-      await writeContract({
+      // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
+      writeContract({
         address: PONYPVP_ADDRESS,
         abi: PONYPVP_ABI,
         functionName: 'joinMatch',
@@ -208,7 +208,10 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
         value: entryFee as bigint,
         chainId: 42220
       })
-      setStatusMessage('Join transaction sent! Waiting for confirmation...')
+
+      // State updates AFTER writeContract to avoid breaking mobile wallet interaction
+      setStatusMessage('Joining match...')
+      setIsJoining(true)
     } catch (error) {
       console.error('Error joining match:', error)
       setStatusMessage('Failed to join match')
