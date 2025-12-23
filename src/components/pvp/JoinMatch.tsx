@@ -156,9 +156,16 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
     const tokenAddress = (matchData as any)[2] as `0x${string}`
 
     try {
-      setStatusMessage('Approving tokens...')
+      setStatusMessage('Opening wallet to approve tokens...')
       setIsApprovingToken(true)
       setApprovalHash(null)
+      
+      console.log('Attempting to approve:', {
+        tokenAddress,
+        spender: PONYPVP_ADDRESS,
+        amount: betAmount.toString()
+      })
+      
       await writeContract({
         address: tokenAddress,
         abi: PONY_TOKEN_ABI,
@@ -166,9 +173,16 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
         args: [PONYPVP_ADDRESS, betAmount],
         chainId: 42220
       })
-    } catch (error) {
-      setStatusMessage('Approval failed')
+    } catch (error: any) {
+      console.error('Approval error:', error)
+      // Check if user rejected
+      if (error?.message?.includes('User rejected') || error?.code === 4001) {
+        setStatusMessage('❌ Approval rejected by user')
+      } else {
+        setStatusMessage(`❌ Approval failed: ${error?.message || 'Unknown error'}`)
+      }
       setIsApprovingToken(false)
+      resetWrite()
     }
   }
 
