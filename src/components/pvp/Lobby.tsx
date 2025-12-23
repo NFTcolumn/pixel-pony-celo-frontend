@@ -123,7 +123,13 @@ export default function Lobby({ matchId, onMatchJoined, onBack, onCreateAnother 
     if (!matchDetails) return
 
     const createdAt = Number((matchDetails as any)[14])
-    if (createdAt === 0) return
+    
+    // If createdAt is 0, the match was just created and timestamp not set yet
+    // Show full 10 minutes in this case
+    if (createdAt === 0) {
+      setTimeRemaining(600)
+      return
+    }
 
     const updateTimer = () => {
       const now = Math.floor(Date.now() / 1000)

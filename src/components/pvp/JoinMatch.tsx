@@ -107,33 +107,20 @@ export default function JoinMatch({ matchId, onMatchJoined, onBack }: JoinMatchP
     }
   }, [hash, isApprovingToken, approvalHash])
 
-  // Handle approval confirmation with polling
+  // Handle approval confirmation with simpler polling
   useEffect(() => {
     if (!approvalHash || !isConfirmed || approvalHash !== hash || !matchData) return
 
     setStatusMessage('Approval confirmed! Checking allowance...')
+    setApprovalHash(null)
+    setIsApprovingToken(false)
+    resetWrite()
 
+    // Simple delayed refetch - works better on mobile
     const checkAllowance = async () => {
-      const betAmount = (matchData as any)[3] as bigint
-
-      for (let i = 0; i < 25; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setStatusMessage(`Verifying approval... (${i + 1}/25)`)
-        const result = await refetchAllowance()
-        if (result.data && (result.data as bigint) >= betAmount) {
-          setStatusMessage(`✅ Approved! Ready to join!`)
-          setApprovalHash(null)
-          setIsApprovingToken(false)
-          resetWrite()
-          setTimeout(() => refetchAllowance(), 100)
-          return
-        }
-      }
-      setStatusMessage('Approval on-chain. Try joining now.')
-      setApprovalHash(null)
-      setIsApprovingToken(false)
-      resetWrite()
-      refetchAllowance()
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      await refetchAllowance()
+      setStatusMessage('✅ Tokens approved! You can now join the match.')
     }
 
     checkAllowance()
