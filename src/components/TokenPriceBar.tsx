@@ -80,6 +80,12 @@ function formatUsd(n?: number) {
 export default function TokenPriceBar() {
   const [priceData, setPriceData] = useState<PriceData>({});
 
+  // Calculate max bet rewards in USD
+  const MAX_BET_PONY = 50_000_000_000; // 50 billion PONY
+  const firstPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 10 * priceData.ponyPrice) : undefined;
+  const secondPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 2.5 * priceData.ponyPrice) : undefined;
+  const thirdPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 1 * priceData.ponyPrice) : undefined;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -153,6 +159,60 @@ export default function TokenPriceBar() {
           <span style={{ opacity: 0.85, fontSize: 12 }}>CELO</span>
           <span style={{ fontWeight: 800 }}>{formatUsd(priceData.celoPrice)}</span>
           <span style={{ opacity: 0.6, fontSize: 12 }}>USD</span>
+        </div>
+
+        {/* Separator */}
+        <div style={{ opacity: 0.3, fontSize: 12 }}>|</div>
+
+        {/* Max Bet Rewards */}
+        <div style={{ opacity: 0.85, fontSize: 12, fontWeight: 600 }}>Max Bet Rewards:</div>
+
+        {/* 1st Place */}
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            alignItems: "baseline",
+            padding: "6px 10px",
+            border: "1px solid rgba(255,215,0,0.3)",
+            borderRadius: 999,
+            background: "rgba(255,215,0,0.05)",
+          }}
+        >
+          <span style={{ fontSize: 12 }}>🥇</span>
+          <span style={{ fontWeight: 800, color: "#ffd700" }}>{formatUsd(firstPlaceReward)}</span>
+        </div>
+
+        {/* 2nd Place */}
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            alignItems: "baseline",
+            padding: "6px 10px",
+            border: "1px solid rgba(192,192,192,0.3)",
+            borderRadius: 999,
+            background: "rgba(192,192,192,0.05)",
+          }}
+        >
+          <span style={{ fontSize: 12 }}>🥈</span>
+          <span style={{ fontWeight: 800, color: "#c0c0c0" }}>{formatUsd(secondPlaceReward)}</span>
+        </div>
+
+        {/* 3rd Place */}
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            alignItems: "baseline",
+            padding: "6px 10px",
+            border: "1px solid rgba(205,127,50,0.3)",
+            borderRadius: 999,
+            background: "rgba(205,127,50,0.05)",
+          }}
+        >
+          <span style={{ fontSize: 12 }}>🥉</span>
+          <span style={{ fontWeight: 800, color: "#cd7f32" }}>{formatUsd(thirdPlaceReward)}</span>
         </div>
       </div>
 
