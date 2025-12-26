@@ -136,7 +136,7 @@ export default function TokenPriceBar() {
         >
           <span style={{ opacity: 0.85, fontSize: 12 }}>PONY</span>
           <span style={{ fontWeight: 800 }}>{formatUsd(priceData.ponyPrice)}</span>
-          <span style={{ opacity: 0.6, fontSize: 12 }}>Ubeswap</span>
+          <span style={{ opacity: 0.6, fontSize: 12 }}>USD</span>
         </div>
 
         {/* CELO Price */}
