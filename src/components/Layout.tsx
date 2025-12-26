@@ -3,6 +3,7 @@ import { useAccount, useConnect, useDisconnect, useSwitchChain, useReadContract 
 import { useState, useEffect } from 'react'
 import { celo } from 'wagmi/chains'
 import './Layout.css'
+import TokenPriceBar from './TokenPriceBar'
 
 const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
 const MIN_PONY_BALANCE = BigInt('1000000000000000000000000000000') // 1 trillion PONY (18 decimals)
@@ -55,6 +56,8 @@ export default function Layout() {
 
   return (
     <div className="layout">
+      <TokenPriceBar />
+
       <header className="site-header">
         <div className="header-container">
           <div className="logo-section">
