@@ -1,51 +1,63 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-type DexPrice = {
-  dex: "Uniswap" | "PancakeSwap" | "QuickSwap" | "Ubeswap";
-  chain: "ethereum" | "bsc" | "polygon" | "celo";
-  tokenAddress: string;
-  priceUsd?: number;
-  pairAddress?: string;
-  liquidityUsd?: number;
-  updatedAt?: number;
+type PriceData = {
+  ponyPrice?: number;
+  celoPrice?: number;
   error?: string;
 };
 
-type DexScreenerPair = {
-  dexId: string; // "uniswap", "pancakeswap", "quickswap", "ubeswap", etc.
-  pairAddress: string;
-  priceUsd?: string;
-  liquidity?: { usd?: number };
-};
+async function fetchPonyPrice(): Promise<number | null> {
+  try {
+    // Fetch PONY price from DEXScreener
+    const url = `https://api.dexscreener.com/token-pairs/v1/celo/0x000BE46901ea6f7ac2c1418D158f2f0A80992c07`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-async function fetchBestPoolPriceUsd(opts: {
-  chain: DexPrice["chain"];
-  tokenAddress: string;
-  wantedDexId: string;
-}): Promise<{ priceUsd?: number; pairAddress?: string; liquidityUsd?: number } | null> {
-  const { chain, tokenAddress, wantedDexId } = opts;
+    const pairs = await res.json();
+    // Find Ubeswap pair with highest liquidity
+    const ubeswapPairs = pairs
+      .filter((p: any) => p.dexId?.toLowerCase() === 'ubeswap')
+      .sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
 
-  // DEXScreener: "Get the pools of a given token address"
-  // https://api.dexscreener.com/token-pairs/v1/{chainId}/{tokenAddress}
-  const url = `https://api.dexscreener.com/token-pairs/v1/${chain}/${tokenAddress}`;
-
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`DEXScreener HTTP ${res.status}`);
+    if (ubeswapPairs.length > 0 && ubeswapPairs[0].priceUsd) {
+      return Number(ubeswapPairs[0].priceUsd);
+    }
+    return null;
+  } catch (e) {
+    console.error('Error fetching PONY price:', e);
+    return null;
   }
+}
 
-  const pairs = (await res.json()) as DexScreenerPair[];
-  const filtered = pairs
-    .filter((p) => (p.dexId || "").toLowerCase() === wantedDexId.toLowerCase())
-    .map((p) => ({
-      pairAddress: p.pairAddress,
-      priceUsd: p.priceUsd ? Number(p.priceUsd) : undefined,
-      liquidityUsd: p.liquidity?.usd ?? undefined,
-    }))
-    // pick the most liquid pool (usually the "main" price)
-    .sort((a, b) => (b.liquidityUsd ?? 0) - (a.liquidityUsd ?? 0));
+async function fetchCeloPrice(): Promise<number | null> {
+  try {
+    // Fetch CELO price from DEXScreener using CELO token address
+    const url = `https://api.dexscreener.com/token-pairs/v1/celo/0x471EcE3750Da237f93B8E339c536989b8978a438`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-  return filtered[0] ?? null;
+    const pairs = await res.json();
+
+    // Find pairs with mcUSD, mCUSD, or USDm (Mento stablecoins) which show accurate CELO price
+    const celoPairs = pairs
+      .filter((p: any) => {
+        const baseSymbol = p.baseToken?.symbol?.toUpperCase();
+        const quoteSymbol = p.quoteToken?.symbol?.toUpperCase();
+        // Look for pairs with Mento stablecoins
+        return baseSymbol === 'MCUSD' || baseSymbol === 'MCUSD' || baseSymbol === 'USDM' ||
+               quoteSymbol === 'MCUSD' || quoteSymbol === 'MCUSD' || quoteSymbol === 'USDM';
+      })
+      .sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
+
+    if (celoPairs.length > 0 && celoPairs[0].priceUsd) {
+      return Number(celoPairs[0].priceUsd);
+    }
+
+    return null;
+  } catch (e) {
+    console.error('Error fetching CELO price:', e);
+    return null;
+  }
 }
 
 function formatUsd(n?: number) {
@@ -66,61 +78,24 @@ function formatUsd(n?: number) {
 }
 
 export default function TokenPriceBar() {
-  // Token is only on Celo via Ubeswap for now
-  const configs = useMemo<DexPrice[]>(
-    () => [
-      {
-        dex: "Ubeswap",
-        chain: "celo",
-        tokenAddress: "0x000BE46901ea6f7ac2c1418D158f2f0A80992c07",
-      },
-    ],
-    []
-  );
-
-  const [rows, setRows] = useState<DexPrice[]>(configs);
+  const [priceData, setPriceData] = useState<PriceData>({});
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const next = await Promise.all(
-        configs.map(async (c) => {
-          try {
-            const wantedDexId =
-              c.dex === "Uniswap"
-                ? "uniswap"
-                : c.dex === "PancakeSwap"
-                ? "pancakeswap"
-                : c.dex === "QuickSwap"
-                ? "quickswap"
-                : "ubeswap";
+      const [ponyPrice, celoPrice] = await Promise.all([
+        fetchPonyPrice(),
+        fetchCeloPrice()
+      ]);
 
-            const best = await fetchBestPoolPriceUsd({
-              chain: c.chain,
-              tokenAddress: c.tokenAddress,
-              wantedDexId,
-            });
-
-            return {
-              ...c,
-              priceUsd: best?.priceUsd,
-              pairAddress: best?.pairAddress,
-              liquidityUsd: best?.liquidityUsd,
-              updatedAt: Date.now(),
-              error: best?.priceUsd ? undefined : "No price found for this DEX (check token address / liquidity).",
-            } satisfies DexPrice;
-          } catch (e: any) {
-            return {
-              ...c,
-              error: e?.message ?? "Failed to load",
-              updatedAt: Date.now(),
-            } satisfies DexPrice;
-          }
-        })
-      );
-
-      if (!cancelled) setRows(next);
+      if (!cancelled) {
+        setPriceData({
+          ponyPrice: ponyPrice ?? undefined,
+          celoPrice: celoPrice ?? undefined,
+          error: !ponyPrice && !celoPrice ? "Failed to load prices" : undefined
+        });
+      }
     }
 
     load();
@@ -131,7 +106,7 @@ export default function TokenPriceBar() {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [configs]);
+  }, []);
 
   return (
     <div
@@ -148,36 +123,43 @@ export default function TokenPriceBar() {
       }}
     >
       <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ fontWeight: 700, letterSpacing: 0.2 }}>PONY Price</div>
+        {/* PONY Price */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "baseline",
+            padding: "6px 10px",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 999,
+          }}
+        >
+          <span style={{ opacity: 0.85, fontSize: 12 }}>PONY</span>
+          <span style={{ fontWeight: 800 }}>{formatUsd(priceData.ponyPrice)}</span>
+          <span style={{ opacity: 0.6, fontSize: 12 }}>Ubeswap</span>
+        </div>
 
-        {rows.map((r) => (
-          <div
-            key={`${r.dex}-${r.chain}`}
-            style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "baseline",
-              padding: "6px 10px",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 999,
-            }}
-            title={
-              r.pairAddress
-                ? `Pair: ${r.pairAddress}\nLiquidity (USD): ${r.liquidityUsd ?? "—"}`
-                : r.error ?? ""
-            }
-          >
-            <span style={{ opacity: 0.85, fontSize: 12 }}>{r.dex}</span>
-            <span style={{ fontWeight: 800 }}>{formatUsd(r.priceUsd)}</span>
-            <span style={{ opacity: 0.6, fontSize: 12 }}>{r.chain}</span>
-          </div>
-        ))}
+        {/* CELO Price */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "baseline",
+            padding: "6px 10px",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 999,
+          }}
+        >
+          <span style={{ opacity: 0.85, fontSize: 12 }}>CELO</span>
+          <span style={{ fontWeight: 800 }}>{formatUsd(priceData.celoPrice)}</span>
+          <span style={{ opacity: 0.6, fontSize: 12 }}>USD</span>
+        </div>
       </div>
 
-      {/* Optional: show errors (comment out if you want it super clean) */}
-      {rows.some((r) => r.error) && (
+      {/* Show error if prices fail to load */}
+      {priceData.error && (
         <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-          Note: Some DEX prices may show "—" if the token address is wrong for that chain or there's no liquid pool.
+          {priceData.error}
         </div>
       )}
     </div>
