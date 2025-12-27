@@ -6,25 +6,113 @@ type PriceData = {
   error?: string;
 };
 
-async function fetchPonyPrice(): Promise<number | null> {
+const UBESWAP_PAIR_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'getReserves',
+    outputs: [
+      { name: 'reserve0', type: 'uint112' },
+      { name: 'reserve1', type: 'uint112' },
+      { name: 'blockTimestampLast', type: 'uint32' }
+    ],
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'token0',
+    outputs: [{ name: '', type: 'address' }],
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'token1',
+    outputs: [{ name: '', type: 'address' }],
+    type: 'function'
+  }
+] as const;
+
+async function fetchPonyPrice(celoPrice?: number): Promise<number | null> {
   try {
-    // Fetch PONY price from DEXScreener
-    const url = `https://api.dexscreener.com/token-pairs/v1/celo/0x000BE46901ea6f7ac2c1418D158f2f0A80992c07`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // Fetch directly from Ubeswap pair contract
+    const PONY_CELO_PAIR = '0x0644B3bC14b960907678097F8cE3B16f6721C043'; // Ubeswap PONY/CELO pair
+    const PONY_TOKEN = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07';
 
-    const pairs = await res.json();
-    // Find Ubeswap pair with highest liquidity
-    const ubeswapPairs = pairs
-      .filter((p: any) => p.dexId?.toLowerCase() === 'ubeswap')
-      .sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
+    // Create a public RPC provider for Celo
+    const CELO_RPC = 'https://forno.celo.org';
 
-    if (ubeswapPairs.length > 0 && ubeswapPairs[0].priceUsd) {
-      return Number(ubeswapPairs[0].priceUsd);
+    // Fetch reserves from the pair contract
+    const reservesResponse = await fetch(CELO_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{
+          to: PONY_CELO_PAIR,
+          data: '0x0902f1ac' // getReserves()
+        }, 'latest']
+      })
+    });
+
+    const reservesData = await reservesResponse.json();
+
+    if (!reservesData.result) {
+      console.error('No reserves data:', reservesData);
+      return null;
     }
-    return null;
+
+    // Parse reserves (returns reserve0, reserve1, blockTimestampLast)
+    const reserves = reservesData.result;
+    const reserve0 = BigInt('0x' + reserves.slice(2, 66));
+    const reserve1 = BigInt('0x' + reserves.slice(66, 130));
+
+    // Check which token is token0
+    const token0Response = await fetch(CELO_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'eth_call',
+        params: [{
+          to: PONY_CELO_PAIR,
+          data: '0x0dfe1681' // token0()
+        }, 'latest']
+      })
+    });
+
+    const token0Data = await token0Response.json();
+    const token0 = '0x' + token0Data.result.slice(26); // Remove padding
+
+    // Calculate price based on reserves
+    let ponyReserve: bigint, celoReserve: bigint;
+
+    if (token0.toLowerCase() === PONY_TOKEN.toLowerCase()) {
+      ponyReserve = reserve0;
+      celoReserve = reserve1;
+    } else {
+      ponyReserve = reserve1;
+      celoReserve = reserve0;
+    }
+
+    // Price of PONY in CELO = celoReserve / ponyReserve
+    const ponyPriceInCelo = Number(celoReserve) / Number(ponyReserve);
+
+    // If we have CELO price in USD, convert PONY price to USD
+    if (celoPrice) {
+      const ponyPriceUSD = ponyPriceInCelo * celoPrice;
+      console.log('PONY price calculated from on-chain:', ponyPriceUSD);
+      return ponyPriceUSD;
+    }
+
+    console.log('PONY price in CELO:', ponyPriceInCelo);
+    return null; // Need CELO price to get USD price
   } catch (e) {
-    console.error('Error fetching PONY price:', e);
+    console.error('Error fetching PONY price from chain:', e);
     return null;
   }
 }
@@ -90,10 +178,11 @@ export default function TokenPriceBar() {
     let cancelled = false;
 
     async function load() {
-      const [ponyPrice, celoPrice] = await Promise.all([
-        fetchPonyPrice(),
-        fetchCeloPrice()
-      ]);
+      // Fetch CELO price first
+      const celoPrice = await fetchCeloPrice();
+
+      // Then fetch PONY price using CELO price for USD conversion
+      const ponyPrice = await fetchPonyPrice(celoPrice ?? undefined);
 
       if (!cancelled) {
         setPriceData({
