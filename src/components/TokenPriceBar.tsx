@@ -6,191 +6,64 @@ type PriceData = {
   error?: string;
 };
 
-// Uniswap V3 Pool ABI (just the functions we need)
-const UNISWAP_V3_POOL_ABI = [
-  {
-    constant: true,
-    inputs: [],
-    name: 'slot0',
-    outputs: [
-      { name: 'sqrtPriceX96', type: 'uint160' },
-      { name: 'tick', type: 'int24' },
-      { name: 'observationIndex', type: 'uint16' },
-      { name: 'observationCardinality', type: 'uint16' },
-      { name: 'observationCardinalityNext', type: 'uint16' },
-      { name: 'feeProtocol', type: 'uint8' },
-      { name: 'unlocked', type: 'bool' }
-    ],
-    type: 'function'
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'token0',
-    outputs: [{ name: '', type: 'address' }],
-    type: 'function'
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'token1',
-    outputs: [{ name: '', type: 'address' }],
-    type: 'function'
-  }
-] as const;
+const PRICE_API_BASE = 'https://crypto-price-aggregator.onrender.com';
+const PONY_TOKEN = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07';
+const CELO_TOKEN = '0x471EcE3750Da237f93B8E339c536989b8978a438';
 
-// Uniswap V3 Factory ABI
-const UNISWAP_V3_FACTORY_ABI = [
-  {
-    constant: true,
-    inputs: [
-      { name: 'tokenA', type: 'address' },
-      { name: 'tokenB', type: 'address' },
-      { name: 'fee', type: 'uint24' }
-    ],
-    name: 'getPool',
-    outputs: [{ name: 'pool', type: 'address' }],
-    type: 'function'
-  }
-] as const;
-
-async function fetchPonyPrice(celoPrice?: number): Promise<number | null> {
+async function fetchPonyPrice(): Promise<number | null> {
   try {
-    const PONY_TOKEN = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07';
-    const CELO_TOKEN = '0x471EcE3750Da237f93B8E339c536989b8978a438';
-    const UNISWAP_V3_FACTORY = '0x67FEa58D5a5a4162cED847E13c2c81c73bf8aeC4';
-    const CELO_RPC = 'https://forno.celo.org';
-
-    // Try common fee tiers: 0.05%, 0.3%, 1%
-    const feeTiers = [500, 3000, 10000];
-    let poolAddress: string | null = null;
-
-    // Find which pool exists
-    for (const fee of feeTiers) {
-      // Encode getPool(token0, token1, fee)
-      const feeHex = fee.toString(16).padStart(6, '0');
-      const data = '0x1698ee82' +
-        PONY_TOKEN.slice(2).padStart(64, '0') +
-        CELO_TOKEN.slice(2).padStart(64, '0') +
-        feeHex.padStart(64, '0');
-
-      const response = await fetch(CELO_RPC, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_call',
-          params: [{ to: UNISWAP_V3_FACTORY, data }, 'latest']
-        })
-      });
-
-      const result = await response.json();
-      if (result.result && result.result !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
-        poolAddress = '0x' + result.result.slice(26);
-        console.log(`Found PONY/CELO pool at fee tier ${fee/10000}%:`, poolAddress);
-        break;
-      }
-    }
-
-    if (!poolAddress) {
-      console.error('No PONY/CELO Uniswap V3 pool found');
+    const response = await fetch(`${PRICE_API_BASE}/price/${PONY_TOKEN}`);
+    if (!response.ok) {
+      console.error(`PONY price API error: ${response.status}`);
       return null;
     }
 
-    // Get slot0 to get sqrtPriceX96
-    const slot0Response = await fetch(CELO_RPC, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 2,
-        method: 'eth_call',
-        params: [{ to: poolAddress, data: '0x3850c7bd' }, 'latest'] // slot0()
-      })
-    });
+    const data = await response.json();
+    console.log('PONY price response:', data);
 
-    const slot0Data = await slot0Response.json();
-    if (!slot0Data.result) {
-      console.error('No slot0 data');
-      return null;
+    // Use primary price from the aggregator
+    if (data.primaryPrice && data.primaryPrice > 0) {
+      return data.primaryPrice;
     }
 
-    // Parse sqrtPriceX96 (first 160 bits / 40 hex chars after 0x)
-    const sqrtPriceX96 = BigInt('0x' + slot0Data.result.slice(2, 42));
-
-    // Get token0 to determine order
-    const token0Response = await fetch(CELO_RPC, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 3,
-        method: 'eth_call',
-        params: [{ to: poolAddress, data: '0x0dfe1681' }, 'latest'] // token0()
-      })
-    });
-
-    const token0Data = await token0Response.json();
-    const token0 = '0x' + token0Data.result.slice(26);
-
-    // Calculate price from sqrtPriceX96
-    // price = (sqrtPriceX96 / 2^96) ^ 2
-    const Q96 = BigInt(2) ** BigInt(96);
-    const price = (Number(sqrtPriceX96) / Number(Q96)) ** 2;
-
-    // If token0 is PONY, price is CELO/PONY, so PONY/CELO = 1/price
-    // If token0 is CELO, price is PONY/CELO
-    let ponyPriceInCelo: number;
-    if (token0.toLowerCase() === PONY_TOKEN.toLowerCase()) {
-      ponyPriceInCelo = 1 / price;
-    } else {
-      ponyPriceInCelo = price;
+    // Fallback to average price
+    if (data.averagePrice && data.averagePrice > 0) {
+      return data.averagePrice;
     }
 
-    console.log('PONY price in CELO:', ponyPriceInCelo);
-
-    // Convert to USD if we have CELO price
-    if (celoPrice) {
-      const ponyPriceUSD = ponyPriceInCelo * celoPrice;
-      console.log('PONY price in USD:', ponyPriceUSD);
-      return ponyPriceUSD;
-    }
-
+    console.error('No valid PONY price in response');
     return null;
   } catch (e) {
-    console.error('Error fetching PONY price from Uniswap V3:', e);
+    console.error('Error fetching PONY price from API:', e);
     return null;
   }
 }
 
 async function fetchCeloPrice(): Promise<number | null> {
   try {
-    // Fetch CELO price from DEXScreener using CELO token address
-    const url = `https://api.dexscreener.com/token-pairs/v1/celo/0x471EcE3750Da237f93B8E339c536989b8978a438`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const pairs = await res.json();
-
-    // Find pairs with mcUSD, mCUSD, or USDm (Mento stablecoins) which show accurate CELO price
-    const celoPairs = pairs
-      .filter((p: any) => {
-        const baseSymbol = p.baseToken?.symbol?.toUpperCase();
-        const quoteSymbol = p.quoteToken?.symbol?.toUpperCase();
-        // Look for pairs with Mento stablecoins
-        return baseSymbol === 'MCUSD' || baseSymbol === 'MCUSD' || baseSymbol === 'USDM' ||
-               quoteSymbol === 'MCUSD' || quoteSymbol === 'MCUSD' || quoteSymbol === 'USDM';
-      })
-      .sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
-
-    if (celoPairs.length > 0 && celoPairs[0].priceUsd) {
-      return Number(celoPairs[0].priceUsd);
+    const response = await fetch(`${PRICE_API_BASE}/price/${CELO_TOKEN}`);
+    if (!response.ok) {
+      console.error(`CELO price API error: ${response.status}`);
+      return null;
     }
 
+    const data = await response.json();
+    console.log('CELO price response:', data);
+
+    // Use primary price from the aggregator
+    if (data.primaryPrice && data.primaryPrice > 0) {
+      return data.primaryPrice;
+    }
+
+    // Fallback to average price
+    if (data.averagePrice && data.averagePrice > 0) {
+      return data.averagePrice;
+    }
+
+    console.error('No valid CELO price in response');
     return null;
   } catch (e) {
-    console.error('Error fetching CELO price:', e);
+    console.error('Error fetching CELO price from API:', e);
     return null;
   }
 }
@@ -225,11 +98,11 @@ export default function TokenPriceBar() {
     let cancelled = false;
 
     async function load() {
-      // Fetch CELO price first
-      const celoPrice = await fetchCeloPrice();
-
-      // Then fetch PONY price using CELO price for USD conversion
-      const ponyPrice = await fetchPonyPrice(celoPrice ?? undefined);
+      // Fetch both prices in parallel from the API
+      const [celoPrice, ponyPrice] = await Promise.all([
+        fetchCeloPrice(),
+        fetchPonyPrice()
+      ]);
 
       if (!cancelled) {
         setPriceData({
