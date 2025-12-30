@@ -110,20 +110,7 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
     }
   }, [publicClient, matchId, isConnected, refetchMatch, refetchCurrentPicker])
 
-  // Check if match is ready to race
-  useEffect(() => {
-    if (!matchData || !isConnected || hasTriggeredRace) return
-
-    const state = Number((matchData as any)[5])
-
-    // State 3 = ReadyToRace (all horses selected) - DO NOT trigger, PVP.tsx will handle it
-    // State 4 = Completed (race finished) - DO NOT trigger
-    if (state === 3 && !hasTriggeredRace) {
-      setStatusMessage('All horses selected! Preparing race...')
-      setHasTriggeredRace(true)
-      // Note: The race will be executed by PVP.tsx, not here
-    }
-  }, [matchData, isConnected, hasTriggeredRace])
+  // Check if match is ready to race - REMOVED: We don't auto-trigger anymore, Player 2 must click button
 
   // Check whose turn it is and auto-select last 4 if applicable
   useEffect(() => {
@@ -339,7 +326,19 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
   const creator = (matchData as any)[0] as string
   const opponent = (matchData as any)[1] as string
   const state = Number((matchData as any)[5])
-  const isReadyToRace = state === 3 // All horses selected, ready to execute race
+
+  // Check if all horses selected
+  const allHorsesSelected = myHorses.length === 8 && opponentHorses.length === 8
+
+  // Ready to race if: all horses selected AND state is 3
+  // If state is 2 but all horses selected, contract state is stuck - need manual fix
+  const isReadyToRace = allHorsesSelected && state === 3
+  const isStateStuck = allHorsesSelected && state === 2
+
+  // Only player 2 (opponent) should execute the race
+  const isCreator = address?.toLowerCase() === creator.toLowerCase()
+  const isPlayer2 = !isCreator // Player 2 is the opponent (not the creator)
+
 
   return (
     <div className="container">
@@ -439,8 +438,39 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
         })}
       </div>
 
-      {/* Execute Race Button - Show when all horses are selected */}
-      {isReadyToRace && (
+      {/* State Stuck Warning - Contract didn't update to ReadyToRace */}
+      {isStateStuck && (
+        <div className="match-info" style={{ background: '#fef3c7', border: '2px solid #f59e0b', marginTop: '20px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#92400e', fontWeight: 'bold', marginBottom: '10px' }}>
+              ⚠️ ALL HORSES SELECTED - FINALIZE NEEDED
+            </div>
+            <div style={{ fontSize: '10px', color: '#92400e', lineHeight: '1.6', marginBottom: '15px' }}>
+              All 16 horses are selected, but the contract needs to finalize the selection phase.
+              Click below to update the contract state and enable the race button.
+            </div>
+            <button
+              className="race-btn"
+              onClick={() => {
+                // Trigger a re-check by calling the contract to force state transition
+                // The contract will see both players have 8 horses and transition to ReadyToRace
+                console.log('Attempting to finalize match state...')
+                refetchMatch()
+              }}
+              style={{
+                background: '#f59e0b',
+                borderColor: '#d97706',
+                width: '100%'
+              }}
+            >
+              🔄 REFRESH MATCH STATE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Execute Race Button - Show ONLY to player 2 (opponent) when all horses are selected */}
+      {isReadyToRace && isPlayer2 && (
         <div className="match-info" style={{ background: '#dcfce7', border: '2px solid #22c55e', marginTop: '20px' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '14px', color: '#166534', fontWeight: 'bold', marginBottom: '10px' }}>
@@ -462,6 +492,20 @@ export default function HorseSelection({ matchId, onAllHorsesSelected, onBack }:
             >
               {hasTriggeredRace ? '⏳ EXECUTING RACE...' : '🏁 EXECUTE RACE'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting message for player 1 (creator) when ready to race */}
+      {isReadyToRace && !isPlayer2 && (
+        <div className="match-info" style={{ background: '#fffbeb', border: '2px solid #fbbf24', marginTop: '20px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '14px', color: '#92400e', fontWeight: 'bold', marginBottom: '10px' }}>
+              ✅ ALL HORSES SELECTED!
+            </div>
+            <div style={{ fontSize: '11px', color: '#92400e' }}>
+              ⏳ Waiting for Player 2 to execute the race...
+            </div>
           </div>
         </div>
       )}

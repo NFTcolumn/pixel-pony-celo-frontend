@@ -52,8 +52,18 @@ export default function PVP() {
   const [celoscanTimer, setCeloscanTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [copiedMatchId, setCopiedMatchId] = useState<string | null>(null)
 
-  const { writeContract, data: executeHash } = useWriteContract()
-  const { isSuccess: raceExecuted } = useWaitForTransactionReceipt({ hash: executeHash })
+  const { writeContract, data: executeHash, error: writeError, isPending: isWritePending } = useWriteContract()
+  const { isSuccess: raceExecuted, isLoading: isWaitingForReceipt, error: receiptError } = useWaitForTransactionReceipt({ hash: executeHash })
+
+  // Log errors
+  useEffect(() => {
+    if (writeError) {
+      console.error('WriteContract Error:', writeError)
+    }
+    if (receiptError) {
+      console.error('Receipt Error:', receiptError)
+    }
+  }, [writeError, receiptError])
 
   // Read user's matches
   const { data: userMatches, refetch: refetchMatches } = useReadContract({
@@ -135,13 +145,16 @@ export default function PVP() {
         const elapsed = now - createdAt
         const isTimedOut = state === 0 && elapsed > 600 && createdAt > 0
 
+        const creatorHorses = (match.result as any)[6] as number[]
+        const opponentHorses = (match.result as any)[7] as number[]
+
         const matchInfo = {
           id: matchId.toString(),
           state,
           data: match.result
         }
 
-        console.log(`Match ${matchId.toString().slice(0, 10)}: state=${state}, hasWinners=${hasWinners}, isTimedOut=${isTimedOut}`)
+        console.log(`Match ${matchId.toString().slice(0, 10)}: state=${state}, creatorHorses=${creatorHorses.length}, opponentHorses=${opponentHorses.length}, hasWinners=${hasWinners}, isTimedOut=${isTimedOut}`)
 
         // Match is completed if:
         // 1. State is 4 (Completed) - includes canceled matches and finished races
@@ -208,11 +221,7 @@ export default function PVP() {
     // State 3 = ReadyToRace
     const hasWinners = winners && winners.length === 3 && Number(winners[0]) !== 0
 
-    // If no winners yet, execute race automatically
-    if (state === 3 && !hasWinners && currentView === 'selection' && !executeHash) {
-      console.log('All horses selected! Auto-executing race...')
-      handleAllHorsesSelected()
-    }
+    // REMOVED AUTO-EXECUTION - Player 2 must manually execute the race via button
 
     // ONLY show race overlay if:
     // 1. We have valid winners (race was executed)
@@ -251,6 +260,26 @@ export default function PVP() {
 
     try {
       console.log('All horses selected! Executing race...')
+      console.log('Match ID:', matchId)
+      console.log('Match data:', matchData)
+
+      if (matchData) {
+        const state = Number((matchData as any)[5])
+        const creatorHorses = (matchData as any)[6] as number[]
+        const opponentHorses = (matchData as any)[7] as number[]
+        console.log('Contract state:', state, '(should be 3 for ReadyToRace)')
+        console.log('Creator horses:', creatorHorses.length, creatorHorses)
+        console.log('Opponent horses:', opponentHorses.length, opponentHorses)
+        console.log('HORSES_PER_PLAYER check:', creatorHorses.length === 8, opponentHorses.length === 8)
+
+        // Check for duplicates
+        const allHorses = [...creatorHorses, ...opponentHorses]
+        const uniqueHorses = new Set(allHorses)
+        console.log('Total horses:', allHorses.length, 'Unique:', uniqueHorses.size)
+        if (allHorses.length !== uniqueHorses.size) {
+          console.warn('⚠️ DUPLICATE HORSES DETECTED!')
+        }
+      }
 
       // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
       writeContract({

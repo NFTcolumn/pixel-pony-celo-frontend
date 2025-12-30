@@ -5,6 +5,11 @@ import '../Game.css'
 import PIXEL_PONY_ABI_FULL from '../PixelPonyABI.json'
 import ReferralHandler from '../components/ReferralHandler'
 
+// Price API
+const PRICE_API_BASE = 'https://crypto-price-aggregator.onrender.com'
+const CELO_TOKEN = '0x471EcE3750Da237f93B8E339c536989b8978a438'
+const PONY_TOKEN = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
+
 // Contract addresses
 const PIXEL_PONY_ADDRESS = '0x3e9b5F357326a399aff2988eC501E28C9DD9f3b9'
 const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
@@ -85,6 +90,16 @@ export default function Game() {
   const [lastProcessedHash, setLastProcessedHash] = useState<string | null>(null)
   const trackInnerRef = useRef<HTMLDivElement>(null)
 
+  // Turbo mode state - pre-approve races
+  const [turboMode, setTurboMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('turboMode')
+    return saved === 'true'
+  })
+
+  // Price data for USD conversion
+  const [celoPrice, setCeloPrice] = useState<number | null>(null)
+  const [ponyPrice, setPonyPrice] = useState<number | null>(null)
+
   // Save selections to localStorage
   useEffect(() => {
     if (selectedHorse !== null) {
@@ -101,6 +116,46 @@ export default function Game() {
       localStorage.removeItem('selectedBet')
     }
   }, [selectedBet])
+
+  // Save turbo mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('turboMode', turboMode.toString())
+  }, [turboMode])
+
+  // Fetch CELO and PONY prices for USD conversion
+  useEffect(() => {
+    async function fetchPrices() {
+      try {
+        // Fetch CELO price
+        const celoResponse = await fetch(`${PRICE_API_BASE}/price/${CELO_TOKEN}`)
+        if (celoResponse.ok) {
+          const celoData = await celoResponse.json()
+          if (celoData.primaryPrice && celoData.primaryPrice > 0) {
+            setCeloPrice(celoData.primaryPrice)
+          } else if (celoData.averagePrice && celoData.averagePrice > 0) {
+            setCeloPrice(celoData.averagePrice)
+          }
+        }
+
+        // Fetch PONY price
+        const ponyResponse = await fetch(`${PRICE_API_BASE}/price/${PONY_TOKEN}`)
+        if (ponyResponse.ok) {
+          const ponyData = await ponyResponse.json()
+          if (ponyData.primaryPrice && ponyData.primaryPrice > 0) {
+            setPonyPrice(ponyData.primaryPrice)
+          } else if (ponyData.averagePrice && ponyData.averagePrice > 0) {
+            setPonyPrice(ponyData.averagePrice)
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching prices:', e)
+      }
+    }
+
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 30000) // Refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   // Read jackpot
   const { data: gameStats, refetch: refetchJackpot } = useReadContract({
@@ -172,15 +227,56 @@ export default function Game() {
       // Update status message based on approval state
       if (approved && selectedHorse !== null) {
         const betDisplay = formatPony(formatEther(selectedBet))
-        setStatusMessage(`Ready to race! Pony #${selectedHorse + 1} with ${betDisplay} PONY. Click RACE!`)
+        if (turboMode) {
+          setStatusMessage(`🚀 TURBO MODE: Ready to race! Pony #${selectedHorse + 1} with ${betDisplay} PONY. Click RACE!`)
+        } else {
+          setStatusMessage(`Ready to race! Pony #${selectedHorse + 1} with ${betDisplay} PONY. Click RACE!`)
+        }
       } else if (selectedHorse !== null && selectedBet !== null) {
         const betDisplay = formatPony(formatEther(selectedBet))
-        setStatusMessage(`Ready! Pony #${selectedHorse + 1} with ${betDisplay} PONY bet. Click STEP 1 to approve!`)
+        if (turboMode) {
+          setStatusMessage(`🚀 TURBO MODE: Ready! Pony #${selectedHorse + 1} with ${betDisplay} PONY bet. Click STEP 1 to approve!`)
+        } else {
+          setStatusMessage(`Ready! Pony #${selectedHorse + 1} with ${betDisplay} PONY bet. Click STEP 1 to approve!`)
+        }
       }
     } else {
       setIsApproved(false)
     }
-  }, [allowance, selectedBet, selectedHorse])
+  }, [allowance, selectedBet, selectedHorse, turboMode])
+
+  // Turbo mode: Auto-approve max allowance on first use
+  useEffect(() => {
+    if (!turboMode || !address || !selectedBet) return
+
+    // Check if we need to approve
+    if (allowance && allowance >= selectedBet) {
+      // Already approved
+      return
+    }
+
+    // Check if already in process of approving
+    if (approvalHash || isWritePending) {
+      return
+    }
+
+    // Auto-approve with max uint256 value for turbo mode (approve once, race forever)
+    const maxUint256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+    console.log('🚀 Turbo Mode: Auto-approving max allowance for infinite races...')
+
+    try {
+      writeContract({
+        address: PONY_TOKEN_ADDRESS,
+        abi: PONY_TOKEN_ABI,
+        functionName: 'approve',
+        args: [PIXEL_PONY_ADDRESS, maxUint256],
+        chainId: 42220
+      })
+      setStatusMessage('🚀 Turbo Mode: Auto-approving for infinite races...')
+    } catch (error) {
+      console.error('Turbo mode auto-approval error:', error)
+    }
+  }, [turboMode, address, selectedBet, allowance, approvalHash, isWritePending, writeContract])
 
   // Update balances
   useEffect(() => {
@@ -199,6 +295,15 @@ export default function Game() {
   const jackpotDisplay = gameStats && Array.isArray(gameStats)
     ? (parseFloat(formatEther(gameStats[2])) / 1e9).toFixed(2) + 'B'
     : 'Loading...'
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Game component loaded - Turbo mode:', turboMode)
+    console.log('CELO price:', celoPrice)
+    console.log('PONY price:', ponyPrice)
+    console.log('Base fee:', baseFee?.toString())
+    console.log('Jackpot:', jackpotDisplay)
+  }, [turboMode, celoPrice, ponyPrice, baseFee, jackpotDisplay])
 
   const selectHorse = (horseId: number) => {
     setSelectedHorse(horseId)
@@ -627,14 +732,42 @@ export default function Game() {
       <div className="header">
         <img src="/logo.png" alt="Pixel Ponies Logo" />
         <div className="tagline">16 PIXELATED PONIES RACING ON-CHAIN FOR NO REASON</div>
+
         <div className="wallet-info">
           {address && `${address.slice(0, 6)}...${address.slice(-4)} | CELO`}
         </div>
         {address && (
-          <div className="balance-info">
-            <span>{ethBalance || '0.0000'} CELO</span>
-            <span>{ponyBalance || '0'} PONY</span>
-          </div>
+          <>
+            <div className="balance-info">
+              <span>{ethBalance || '0.0000'} CELO</span>
+              <span>{ponyBalance || '0'} PONY</span>
+            </div>
+
+            {/* Turbo Mode Toggle */}
+            <div
+              className="turbo-toggle"
+              onClick={() => setTurboMode(!turboMode)}
+              style={{
+                cursor: 'pointer',
+                padding: '8px 12px',
+                marginTop: '8px',
+                background: turboMode ? '#4ade80' : '#6b7280',
+                borderRadius: '8px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                color: turboMode ? '#000' : '#fff',
+                textAlign: 'center',
+                transition: 'all 0.2s',
+                border: `2px solid ${turboMode ? '#22c55e' : '#4b5563'}`,
+                userSelect: 'none'
+              }}
+            >
+              {turboMode ? '🚀 TURBO MODE: ON' : '🐌 TURBO MODE: OFF'}
+              <div style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>
+                {turboMode ? 'One-click racing enabled' : 'Click to enable auto-approval'}
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -647,7 +780,7 @@ export default function Game() {
 
       {/* Lottery Tickets Display */}
       {address && (
-        <div className="jackpot-display" style={{ marginTop: '16px', background: '#ffeb3b', border: '2px solid #fbc02d' }}>
+        <div className="jackpot-display" style={{ marginTop: '16px', background: '#fdfd82', border: '2px solid #d4d400' }}>
           <div className="jackpot-label" style={{ color: '#333' }}>YOUR LOTTERY TICKETS</div>
           <div className="jackpot-amount" style={{ color: '#333' }}>
             {userTickets && Array.isArray(userTickets) ? userTickets.length : 0}

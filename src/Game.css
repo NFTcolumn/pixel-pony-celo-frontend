@@ -1,57 +1,93 @@
 .container {
     max-width: 500px;
     margin: 0 auto;
+    padding: 10px;
 }
 
 .header {
     text-align: center;
-    padding: 20px 10px;
+    padding: 12px 8px;
     background: #ffffff;
     border: 2px solid #cccccc;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    border-radius: 8px;
+    margin-bottom: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .header img {
-    max-width: 200px;
+    max-width: 180px;
     height: auto;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .header .tagline {
     font-size: 7px;
     color: #000;
-    margin-top: 5px;
+    margin-top: 3px;
+    margin-bottom: 6px;
+}
+
+/* Scrolling Cost Display */
+.cost-scroll-container {
+    overflow: hidden;
+    width: 100%;
+    background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 5px;
+    padding: 6px 0;
+    margin: 8px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cost-scroll-content {
+    display: flex;
+    gap: 60px;
+    animation: scroll-left 15s linear infinite;
+    white-space: nowrap;
+}
+
+.cost-item {
+    font-size: 8px;
+    font-weight: bold;
+    color: #000;
+    padding: 0 20px;
+}
+
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 .wallet-info {
     font-size: 8px;
-    padding: 8px;
+    padding: 6px;
     background: #f0f0f0;
     border-radius: 5px;
-    margin-top: 10px;
+    margin-top: 6px;
     color: #000;
 }
 
 .jackpot-display {
     background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
+    padding: 12px;
+    border-radius: 8px;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     border: 2px solid #cccccc;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .jackpot-label {
-    font-size: 10px;
-    margin-bottom: 5px;
+    font-size: 9px;
+    margin-bottom: 4px;
     color: #000;
 }
 
 .jackpot-amount {
-    font-size: 24px;
+    font-size: 20px;
     color: #ff6b6b;
     font-weight: bold;
 }
@@ -59,15 +95,15 @@
 .horse-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .horse-card {
     background: #ffffff;
     border: 2px solid #cccccc;
-    border-radius: 8px;
-    padding: 10px;
+    border-radius: 6px;
+    padding: 6px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -84,29 +120,29 @@
 }
 
 .horse-sprite {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 5px;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 3px;
     image-rendering: pixelated;
 }
 
 .horse-number {
-    font-size: 12px;
+    font-size: 10px;
     color: #000;
 }
 
 .bet-section {
     background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
     border: 2px solid #cccccc;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .bet-label {
-    font-size: 10px;
-    margin-bottom: 10px;
+    font-size: 9px;
+    margin-bottom: 8px;
     text-align: center;
     color: #000;
 }
@@ -114,17 +150,17 @@
 .bet-buttons {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 6px;
+    margin-bottom: 10px;
 }
 
 .bet-btn {
-    padding: 15px;
+    padding: 10px;
     background: #f0f0f0;
     border: 2px solid #cccccc;
     border-radius: 5px;
     color: #000;
-    font-size: 10px;
+    font-size: 9px;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -142,24 +178,25 @@
 .balance-info {
     display: flex;
     justify-content: space-around;
-    margin-top: 5px;
+    margin-top: 4px;
     background: #e8f5e9;
-    padding: 8px;
+    padding: 6px;
     border-radius: 5px;
     font-size: 8px;
 }
 
 .race-btn {
     width: 100%;
-    padding: 20px;
+    padding: 14px;
     background: #ff6b6b;
     border: 2px solid #d32f2f;
-    border-radius: 10px;
+    border-radius: 8px;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
@@ -177,12 +214,12 @@
 
 .status-message {
     background: #ffffff;
-    padding: 15px;
-    border-radius: 10px;
+    padding: 10px;
+    border-radius: 8px;
     text-align: center;
-    font-size: 10px;
-    line-height: 1.6;
-    margin-bottom: 20px;
+    font-size: 9px;
+    line-height: 1.5;
+    margin-bottom: 12px;
     border: 2px solid #cccccc;
     color: #000;
 }

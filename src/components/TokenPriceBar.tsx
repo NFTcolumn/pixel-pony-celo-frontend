@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useReadContract } from 'wagmi';
+import { formatEther } from 'viem';
+import PIXEL_PONY_ABI from '../PixelPonyABI.json';
 
 type PriceData = {
   ponyPrice?: number;
@@ -9,6 +12,7 @@ type PriceData = {
 const PRICE_API_BASE = 'https://crypto-price-aggregator.onrender.com';
 const PONY_TOKEN = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07';
 const CELO_TOKEN = '0x471EcE3750Da237f93B8E339c536989b8978a438';
+const PIXEL_PONY_ADDRESS = '0x3e9b5F357326a399aff2988eC501E28C9DD9f3b9';
 
 async function fetchPonyPrice(): Promise<number | null> {
   try {
@@ -88,11 +92,48 @@ function formatUsd(n?: number) {
 export default function TokenPriceBar() {
   const [priceData, setPriceData] = useState<PriceData>({});
 
-  // Calculate max bet rewards in USD
+  // Log component mount
+  useEffect(() => {
+    console.log('[TokenPriceBar] Component mounted at:', new Date().toISOString());
+    return () => {
+      console.log('[TokenPriceBar] Component unmounted at:', new Date().toISOString());
+    };
+  }, []);
+
+  // Read base fee (entry cost in CELO)
+  const { data: baseFee } = useReadContract({
+    address: PIXEL_PONY_ADDRESS,
+    abi: PIXEL_PONY_ABI,
+    functionName: 'baseFeeAmount',
+    chainId: 42220
+  });
+
+  // Read jackpot
+  const { data: gameStats } = useReadContract({
+    address: PIXEL_PONY_ADDRESS,
+    abi: PIXEL_PONY_ABI,
+    functionName: 'getGameStats',
+    chainId: 42220
+  });
+
+  // Calculate values
   const MAX_BET_PONY = 50_000_000_000; // 50 billion PONY
   const firstPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 10 * priceData.ponyPrice) : undefined;
   const secondPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 2.5 * priceData.ponyPrice) : undefined;
   const thirdPlaceReward = priceData.ponyPrice ? (MAX_BET_PONY * 1 * priceData.ponyPrice) : undefined;
+
+  // Entry fee in USD
+  const entryFeeUSD = baseFee && priceData.celoPrice
+    ? parseFloat(formatEther(baseFee as bigint)) * priceData.celoPrice
+    : undefined;
+
+  // Jackpot in PONY and USD
+  const jackpotPONY = gameStats && Array.isArray(gameStats)
+    ? (parseFloat(formatEther(gameStats[2])) / 1e9).toFixed(2) + 'B'
+    : undefined;
+  const jackpotUSD = gameStats && Array.isArray(gameStats) && priceData.ponyPrice
+    ? parseFloat(formatEther(gameStats[2])) * priceData.ponyPrice // Don't divide by 1e9, formatEther already converts from wei
+    : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -129,108 +170,131 @@ export default function TokenPriceBar() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        padding: "10px 14px",
-        background: "rgba(10,10,10,0.92)",
-        backdropFilter: "blur(8px)",
-        color: "#fff",
-        borderBottom: "1px solid rgba(255,255,255,0.10)",
+        padding: "8px 0",
+        background: "#fdfd82",
+        color: "#000",
+        borderBottom: "2px solid #d4d400",
         fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+        overflow: "hidden",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
       }}
+      className="token-price-bar-container"
     >
-      <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-        {/* PONY Price */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "baseline",
-            padding: "6px 10px",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 999,
-          }}
-        >
-          <span style={{ opacity: 0.85, fontSize: 12 }}>PONY</span>
-          <span style={{ fontWeight: 800 }}>{formatUsd(priceData.ponyPrice)}</span>
-          <span style={{ opacity: 0.6, fontSize: 12 }}>USD</span>
-        </div>
+      <div
+        className="token-price-bar-scroller"
+        style={{
+          display: "flex",
+          whiteSpace: "nowrap",
+          width: "max-content", // Force container to fit all content so % transform works correctly
+          willChange: "transform",
+        }}
+        onAnimationIteration={() => {
+          console.log('[TokenPriceBar] Animation loop completed at:', new Date().toISOString());
+        }}
+      >
+        {/* Create the full content once, then duplicate it once for seamless loop */}
+        {(() => {
+          console.log('[TokenPriceBar] Rendering content block at:', new Date().toISOString());
 
-        {/* CELO Price */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "baseline",
-            padding: "6px 10px",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 999,
-          }}
-        >
-          <span style={{ opacity: 0.85, fontSize: 12 }}>CELO</span>
-          <span style={{ fontWeight: 800 }}>{formatUsd(priceData.celoPrice)}</span>
-          <span style={{ opacity: 0.6, fontSize: 12 }}>USD</span>
-        </div>
+          const quotes = [
+            "MARKETS SLEEP, PONIES DON'T.",
+            "NEVER STOP RUNNING.",
+            "MOVEMENT IS THE ONLY SIGNAL THAT MATTERS.",
+            "HOOVES FIRST, HEART SECOND.",
+            "PONY PONY PONY.",
+            "SOME RACE TO LIVE, SOME LIVE TO RACE.",
+            "PONY IS THE PATH.",
+            "MOTION IS TRUTH.",
+            "WE RUN BECAUSE STANDING STILL FEELS LIKE DYING.",
+            "MAKE CRYPTO FUN AGAIN.",
+            "PIXEL PONIES DON'T STOP, THEY KEEP GOING."
+          ];
 
-        {/* Separator */}
-        <div style={{ opacity: 0.3, fontSize: 12 }}>|</div>
+          // Build single sequence: prices → quote → prices → quote → ... for all quotes
+          console.log(`[TokenPriceBar] Building sequence with ${quotes.length} quotes`);
+          const singleSequence = quotes.map((quote, quoteIdx) => {
+            // console.log(`[TokenPriceBar] Rendering quote ${quoteIdx + 1}: "${quote}"`);
+            return (
+              <React.Fragment key={quoteIdx}>
+                {/* PONY Price */}
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "0 20px" }} data-quote-block={quoteIdx}>
+                  PONY {formatUsd(priceData.ponyPrice)}
+                </span>
 
-        {/* Max Bet Rewards */}
-        <div style={{ opacity: 0.85, fontSize: 12, fontWeight: 600 }}>Max Bet Rewards:</div>
+                {/* CELO Price */}
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  CELO {formatUsd(priceData.celoPrice)}
+                </span>
 
-        {/* 1st Place */}
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            alignItems: "baseline",
-            padding: "6px 10px",
-            border: "1px solid rgba(255,215,0,0.3)",
-            borderRadius: 999,
-            background: "rgba(255,215,0,0.05)",
-          }}
-        >
-          <span style={{ fontSize: 12 }}>🥇</span>
-          <span style={{ fontWeight: 800, color: "#ffd700" }}>{formatUsd(firstPlaceReward)}</span>
-        </div>
+                {/* Separator - uniform padding on both sides */}
+                <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
 
-        {/* 2nd Place */}
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            alignItems: "baseline",
-            padding: "6px 10px",
-            border: "1px solid rgba(192,192,192,0.3)",
-            borderRadius: 999,
-            background: "rgba(192,192,192,0.05)",
-          }}
-        >
-          <span style={{ fontSize: 12 }}>🥈</span>
-          <span style={{ fontWeight: 800, color: "#c0c0c0" }}>{formatUsd(secondPlaceReward)}</span>
-        </div>
+                {/* Entry Fee */}
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  🎫 ENTRY: {baseFee ? formatEther(baseFee as bigint) : '1'} CELO
+                  {entryFeeUSD ? ` (${formatUsd(entryFeeUSD)})` : ''}
+                </span>
 
-        {/* 3rd Place */}
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            alignItems: "baseline",
-            padding: "6px 10px",
-            border: "1px solid rgba(205,127,50,0.3)",
-            borderRadius: 999,
-            background: "rgba(205,127,50,0.05)",
-          }}
-        >
-          <span style={{ fontSize: 12 }}>🥉</span>
-          <span style={{ fontWeight: 800, color: "#cd7f32" }}>{formatUsd(thirdPlaceReward)}</span>
-        </div>
+                {/* Jackpot */}
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  🏆 JACKPOT: {jackpotPONY || 'Loading...'} PONY
+                  {jackpotUSD ? ` (${formatUsd(jackpotUSD)})` : ''}
+                </span>
+
+                {/* Separator - uniform padding on both sides */}
+                <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
+
+                {/* Max Bet Rewards */}
+                <span style={{ fontSize: 11, fontWeight: 700 }}>MAX BET REWARDS:</span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  🥇 {formatUsd(firstPlaceReward)}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  🥈 {formatUsd(secondPlaceReward)}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  🥉 {formatUsd(thirdPlaceReward)}
+                </span>
+
+                {/* Separator - uniform padding on both sides */}
+                <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
+
+                {/* Quote */}
+                <span style={{ fontSize: 11, fontWeight: 700, fontStyle: "italic", opacity: 0.85 }} data-quote-id={quoteIdx}>
+                  "{quote}"
+                </span>
+
+                {/* Separator after quote - uniform padding on both sides */}
+                <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
+              </React.Fragment>
+            );
+          });
+          console.log(`[TokenPriceBar] Built singleSequence with ${singleSequence.length} items`);
+
+          // Duplicate the entire sequence for seamless infinite scroll
+          // Wrap in divs to avoid duplicate React keys at the top level list
+          return (
+            <>
+              <div>{singleSequence}</div>
+              <div>{singleSequence}</div>
+            </>
+          );
+        })()}
       </div>
 
-      {/* Show error if prices fail to load */}
-      {priceData.error && (
-        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-          {priceData.error}
-        </div>
-      )}
+      <style>{`
+        .token-price-bar-scroller {
+          animation: scroll-left 120s linear infinite;
+        }
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(0%);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+      `}</style>
     </div>
   );
 }
