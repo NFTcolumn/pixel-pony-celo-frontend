@@ -213,14 +213,14 @@ export default function TokenPriceBar() {
                 {/* Separator - uniform padding on both sides */}
                 <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
 
-                {/* Entry Fee */}
-                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                {/* Entry Fee - nowrap to prevent parenthesis issues */}
+                <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
                   🎫 ENTRY: {baseFee ? formatEther(baseFee as bigint) : '1'} CELO
                   {entryFeeUSD ? ` (${formatUsd(entryFeeUSD)})` : ''}
                 </span>
 
-                {/* Jackpot */}
-                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                {/* Jackpot - nowrap to prevent parenthesis issues */}
+                <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
                   🏆 JACKPOT: {jackpotPONY || 'Loading...'} PONY
                   {jackpotUSD ? ` (${formatUsd(jackpotUSD)})` : ''}
                 </span>

@@ -270,10 +270,30 @@ export default function Game() {
       return
     }
 
+    // Check if we already triggered auto-approval for this address (check FIRST to prevent loops)
+    const turboKey = `turbo_approved_${address}`
+    const alreadyTriggered = sessionStorage.getItem(turboKey) === 'true'
+
+    console.log('🔍 Turbo mode check:', {
+      turboMode,
+      address,
+      selectedBet: selectedBet?.toString(),
+      allowance: allowance?.toString(),
+      approvalHash,
+      alreadyTriggered,
+      sessionStorageKey: turboKey
+    })
+
+    if (alreadyTriggered) {
+      console.log('🚀 Turbo Mode: Auto-approval already triggered for this wallet')
+      return
+    }
+
     // Check if we need to approve
     if (allowance && allowance >= selectedBet) {
-      // Already approved
+      // Already approved - mark as triggered to prevent future attempts
       console.log('🚀 Turbo Mode: Already approved, allowance:', allowance?.toString())
+      sessionStorage.setItem(turboKey, 'true')
       return
     }
 
@@ -283,12 +303,14 @@ export default function Game() {
       return
     }
 
-    // Check if we already triggered auto-approval for this address (only once per wallet)
-    const turboKey = `turbo_approved_${address}`
-    if (sessionStorage.getItem(turboKey) === 'true') {
-      console.log('🚀 Turbo Mode: Auto-approval already triggered for this wallet')
+    // Check if write is already pending
+    if (isWritePending) {
+      console.log('🚀 Turbo Mode: Write already pending, skipping')
       return
     }
+
+    // Mark as triggered BEFORE calling writeContract to prevent race conditions
+    sessionStorage.setItem(turboKey, 'true')
 
     // Auto-approve with max uint256 value for turbo mode (approve once, race forever)
     const maxUint256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
@@ -303,12 +325,11 @@ export default function Game() {
         chainId: 42220
       })
       setStatusMessage('🚀 Turbo Mode: Auto-approving for infinite races...')
-      sessionStorage.setItem(turboKey, 'true')
     } catch (error) {
       console.error('Turbo mode auto-approval error:', error)
       sessionStorage.removeItem(turboKey) // Clear flag if failed
     }
-  }, [turboMode, address, selectedBet, allowance, approvalHash, writeContract])
+  }, [turboMode, address, selectedBet, allowance, approvalHash, isWritePending])
 
   // Update balances
   useEffect(() => {
@@ -496,15 +517,15 @@ export default function Game() {
     setStatusMessage('Approval confirmed! Checking allowance...')
 
     const checkAllowance = async () => {
-      // Fast polling: check immediately, then every 1 second for 15 attempts (15 seconds total)
-      for (let i = 0; i < 15; i++) {
+      // Ultra-fast polling: check immediately, then every 0.25 seconds for 30 attempts (7.5 seconds total)
+      for (let i = 0; i < 30; i++) {
         if (i > 0) {
-          // Only delay after first attempt - 1 second intervals for speed
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Only delay after first attempt - 250ms intervals for maximum speed
+          await new Promise(resolve => setTimeout(resolve, 250))
         }
-        setStatusMessage(`Verifying approval... (${i + 1}/15)`)
+        setStatusMessage(`Verifying approval... (${i + 1}/30)`)
         const result = await refetchAllowance()
-        console.log(`Checking allowance... attempt ${i + 1}/15, result:`, result.data?.toString())
+        console.log(`Checking allowance... attempt ${i + 1}/30, result:`, result.data?.toString())
         if (result.data && selectedBet && result.data >= selectedBet) {
           console.log('Allowance detected! Ready to race!')
           setStatusMessage(turboMode ? '🚀 TURBO MODE: Approved! Ready to race!' : '✅ Approved! Now click STEP 2: RACE!')
@@ -796,25 +817,50 @@ export default function Game() {
             {/* Turbo Mode Toggle */}
             <div
               className="turbo-toggle"
-              onClick={() => setTurboMode(!turboMode)}
+              onClick={() => {
+                // When turning ON, confirm to prevent accidental auto-approvals
+                if (!turboMode) {
+                  const confirmed = window.confirm(
+                    '🚀 TURBO MODE\n\n' +
+                    'This will:\n' +
+                    '• Auto-approve max PONY allowance (one time)\n' +
+                    '• Enable one-click racing (no approval step)\n' +
+                    '• Race faster with fewer wallet popups\n\n' +
+                    'Continue?'
+                  )
+                  if (confirmed) {
+                    // Clear any existing session flag when manually enabling
+                    const turboKey = `turbo_approved_${address}`
+                    sessionStorage.removeItem(turboKey)
+                    setTurboMode(true)
+                    console.log('✅ Turbo mode enabled by user, session flag cleared')
+                  }
+                } else {
+                  // Turning OFF is instant, no confirmation needed
+                  setTurboMode(false)
+                  console.log('❌ Turbo mode disabled by user')
+                }
+              }}
               style={{
                 cursor: 'pointer',
-                padding: '8px 12px',
+                padding: '12px 16px',
                 marginTop: '8px',
                 background: turboMode ? '#4ade80' : '#6b7280',
                 borderRadius: '8px',
-                fontSize: '9px',
+                fontSize: '10px',
                 fontWeight: 'bold',
                 color: turboMode ? '#000' : '#fff',
                 textAlign: 'center',
                 transition: 'all 0.2s',
                 border: `2px solid ${turboMode ? '#22c55e' : '#4b5563'}`,
-                userSelect: 'none'
+                userSelect: 'none',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent'
               }}
             >
               {turboMode ? '🚀 TURBO MODE: ON' : '🐌 TURBO MODE: OFF'}
-              <div style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>
-                {turboMode ? 'One-click racing enabled' : 'Click to enable auto-approval'}
+              <div style={{ fontSize: '8px', marginTop: '3px', opacity: 0.9 }}>
+                {turboMode ? 'One-click racing • Tap to disable' : 'Tap to enable auto-approval'}
               </div>
             </div>
           </>
