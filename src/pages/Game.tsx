@@ -68,7 +68,10 @@ function formatPony(num: string): string {
 export default function Game() {
   const { address, isConnected } = useAccount()
   const { writeContract, data: hash, isPending: isWritePending, error: writeError, reset: resetWrite } = useWriteContract()
-  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+    pollingInterval: 5000, // Poll every 5 seconds instead of every block
+  })
   const publicClient = usePublicClient()
 
   const [selectedHorse, setSelectedHorse] = useState<number | null>(() => {
@@ -247,22 +250,40 @@ export default function Game() {
 
   // Turbo mode: Auto-approve max allowance on first use
   useEffect(() => {
-    if (!turboMode || !address || !selectedBet) return
+    // Only run if turbo mode is explicitly ON
+    if (turboMode !== true) {
+      console.log('Turbo mode OFF, skipping auto-approval')
+      return
+    }
+
+    if (!address || !selectedBet) {
+      console.log('Missing address or selectedBet, skipping auto-approval')
+      return
+    }
 
     // Check if we need to approve
     if (allowance && allowance >= selectedBet) {
       // Already approved
+      console.log('🚀 Turbo Mode: Already approved, allowance:', allowance?.toString())
       return
     }
 
     // Check if already in process of approving
-    if (approvalHash || isWritePending) {
+    if (approvalHash) {
+      console.log('🚀 Turbo Mode: Approval already in progress, hash:', approvalHash)
+      return
+    }
+
+    // Check if we already triggered auto-approval for this address (only once per wallet)
+    const turboKey = `turbo_approved_${address}`
+    if (sessionStorage.getItem(turboKey) === 'true') {
+      console.log('🚀 Turbo Mode: Auto-approval already triggered for this wallet')
       return
     }
 
     // Auto-approve with max uint256 value for turbo mode (approve once, race forever)
     const maxUint256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
-    console.log('🚀 Turbo Mode: Auto-approving max allowance for infinite races...')
+    console.log('🚀 Turbo Mode: Triggering auto-approval for max allowance...')
 
     try {
       writeContract({
@@ -273,10 +294,12 @@ export default function Game() {
         chainId: 42220
       })
       setStatusMessage('🚀 Turbo Mode: Auto-approving for infinite races...')
+      sessionStorage.setItem(turboKey, 'true')
     } catch (error) {
       console.error('Turbo mode auto-approval error:', error)
+      sessionStorage.removeItem(turboKey) // Clear flag if failed
     }
-  }, [turboMode, address, selectedBet, allowance, approvalHash, isWritePending, writeContract])
+  }, [turboMode, address, selectedBet, allowance, approvalHash, writeContract])
 
   // Update balances
   useEffect(() => {
@@ -450,17 +473,18 @@ export default function Game() {
     setStatusMessage('Approval confirmed! Checking allowance...')
 
     const checkAllowance = async () => {
-      // More aggressive polling: 25 attempts with shorter delays
-      for (let i = 0; i < 25; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setStatusMessage(`Verifying approval... (${i + 1}/25)`)
+      // Polling every 3 seconds to respect 3 req/sec rate limit: 10 attempts
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        setStatusMessage(`Verifying approval... (${i + 1}/10)`)
         const result = await refetchAllowance()
-        console.log(`Checking allowance... attempt ${i + 1}/25, result:`, result.data?.toString())
+        console.log(`Checking allowance... attempt ${i + 1}/10, result:`, result.data?.toString())
         if (result.data && selectedBet && result.data >= selectedBet) {
           console.log('Allowance detected! Ready to race!')
-          setStatusMessage('✅ Approved! Now click STEP 2: RACE!')
+          setStatusMessage(turboMode ? '🚀 TURBO MODE: Approved! Ready to race!' : '✅ Approved! Now click STEP 2: RACE!')
           setApprovalHash(null)
           resetWrite() // Clear the transaction state
+          console.log('✅ Approval polling detected, resetWrite() called, isApproved should update')
           // Force one more refetch after small delay to ensure hook updates
           setTimeout(() => refetchAllowance(), 100)
           return
@@ -506,7 +530,7 @@ export default function Game() {
         setStatusMessage('Waiting for blockchain confirmation...')
         let receipt = null
         let attempts = 0
-        const maxAttempts = 30
+        const maxAttempts = 20
 
         while (!receipt && attempts < maxAttempts) {
           try {
@@ -516,7 +540,7 @@ export default function Game() {
             attempts++
             console.log(`Attempt ${attempts}/${maxAttempts} - waiting for receipt...`)
             setStatusMessage(`Confirming on blockchain... (${attempts}/${maxAttempts})`)
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await new Promise(resolve => setTimeout(resolve, 3000))
           }
         }
 
@@ -840,11 +864,15 @@ export default function Game() {
         <button
           className="race-btn"
           onClick={async () => {
+            console.log('🔄 Checking approval status manually...')
             setStatusMessage('Manually checking approval...')
             const result = await refetchAllowance()
+            console.log('Manual check result:', result.data?.toString(), 'vs selectedBet:', selectedBet?.toString())
             if (result.data && selectedBet && result.data >= selectedBet) {
-              setStatusMessage('✅ Approval found! Click STEP 2: RACE!')
+              setStatusMessage(turboMode ? '🚀 TURBO MODE: Approved! Ready to race!' : '✅ Approval found! Click STEP 2: RACE!')
               setApprovalHash(null)
+              resetWrite() // Clear the write state so race button becomes enabled
+              console.log('✅ Approval confirmed, resetWrite() called')
             } else {
               setStatusMessage('Not approved yet. Wait a moment and try again.')
             }

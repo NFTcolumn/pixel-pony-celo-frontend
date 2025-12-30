@@ -92,14 +92,6 @@ function formatUsd(n?: number) {
 export default function TokenPriceBar() {
   const [priceData, setPriceData] = useState<PriceData>({});
 
-  // Log component mount
-  useEffect(() => {
-    console.log('[TokenPriceBar] Component mounted at:', new Date().toISOString());
-    return () => {
-      console.log('[TokenPriceBar] Component unmounted at:', new Date().toISOString());
-    };
-  }, []);
-
   // Read base fee (entry cost in CELO)
   const { data: baseFee } = useReadContract({
     address: PIXEL_PONY_ADDRESS,
@@ -188,14 +180,9 @@ export default function TokenPriceBar() {
           width: "max-content", // Force container to fit all content so % transform works correctly
           willChange: "transform",
         }}
-        onAnimationIteration={() => {
-          console.log('[TokenPriceBar] Animation loop completed at:', new Date().toISOString());
-        }}
       >
         {/* Create the full content once, then duplicate it once for seamless loop */}
         {(() => {
-          console.log('[TokenPriceBar] Rendering content block at:', new Date().toISOString());
-
           const quotes = [
             "MARKETS SLEEP, PONIES DON'T.",
             "NEVER STOP RUNNING.",
@@ -211,10 +198,7 @@ export default function TokenPriceBar() {
           ];
 
           // Build single sequence: prices → quote → prices → quote → ... for all quotes
-          console.log(`[TokenPriceBar] Building sequence with ${quotes.length} quotes`);
-          const singleSequence = quotes.map((quote, quoteIdx) => {
-            // console.log(`[TokenPriceBar] Rendering quote ${quoteIdx + 1}: "${quote}"`);
-            return (
+          const singleSequence = quotes.map((quote, quoteIdx) => (
               <React.Fragment key={quoteIdx}>
                 {/* PONY Price */}
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "0 20px" }} data-quote-block={quoteIdx}>
@@ -267,9 +251,7 @@ export default function TokenPriceBar() {
                 {/* Separator after quote - uniform padding on both sides */}
                 <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 700, padding: "0 10px" }}>•</span>
               </React.Fragment>
-            );
-          });
-          console.log(`[TokenPriceBar] Built singleSequence with ${singleSequence.length} items`);
+            ));
 
           // Duplicate the entire sequence for seamless infinite scroll
           // Wrap in divs to avoid duplicate React keys at the top level list
