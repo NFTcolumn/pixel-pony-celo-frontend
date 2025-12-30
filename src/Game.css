@@ -217,7 +217,7 @@
 
 .track-close {
     position: absolute;
-    top: 10px;
+    top: -10px;
     right: 10px;
     background: #ff6b6b;
     color: #fff;

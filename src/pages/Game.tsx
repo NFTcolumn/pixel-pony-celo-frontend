@@ -82,8 +82,8 @@ export default function Game() {
   const [isRacing, setIsRacing] = useState(false)
   const [raceHash, setRaceHash] = useState<`0x${string}` | null>(null)
   const [approvalHash, setApprovalHash] = useState<`0x${string}` | null>(null)
+  const [lastProcessedHash, setLastProcessedHash] = useState<string | null>(null)
   const trackInnerRef = useRef<HTMLDivElement>(null)
-  const processedRaces = useRef<Set<string>>(new Set())
 
   // Save selections to localStorage
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function Game() {
   useEffect(() => {
     if (baseFee && typeof baseFee === 'bigint') {
       console.log('Base Fee from contract:', baseFee.toString(), 'wei')
-      console.log('Base Fee in ETH:', formatEther(baseFee))
+      console.log('Base Fee in CELO:', formatEther(baseFee))
     }
   }, [baseFee])
 
@@ -263,8 +263,8 @@ export default function Game() {
     console.log('  - Bet Amount:', selectedBet.toString(), 'wei')
     console.log('  - Bet Amount (PONY):', formatEther(selectedBet))
     console.log('  - Base Fee (value):', baseFee?.toString(), 'wei')
-    console.log('  - Base Fee (ETH):', baseFee ? formatEther(baseFee as bigint) : 'N/A')
-    console.log('  - User ETH Balance:', ethBalanceData ? formatEther(ethBalanceData.value) : 'unknown')
+    console.log('  - Base Fee (CELO):', baseFee ? formatEther(baseFee as bigint) : 'N/A')
+    console.log('  - User CELO Balance:', ethBalanceData ? formatEther(ethBalanceData.value) : 'unknown')
 
     try {
       // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
@@ -382,13 +382,14 @@ export default function Game() {
         return
       }
 
-      if (processedRaces.current.has(hash)) {
+      // Prevent double processing
+      if (lastProcessedHash === hash) {
         console.log('Race already processed, skipping...')
         return
       }
 
       console.log('Processing race:', hash)
-      processedRaces.current.add(hash)
+      setLastProcessedHash(hash)
 
       try {
         console.log('Race transaction confirmed! Hash:', hash)
@@ -480,6 +481,7 @@ export default function Game() {
         refetchEthBalance()
         refetchAllowance()
 
+        // Cleanup state for next race
         setIsRacing(false)
         setRaceHash(null)
         resetWrite()
@@ -488,16 +490,16 @@ export default function Game() {
       } catch (error: any) {
         console.error('Error in race handler:', error)
         setStatusMessage(`Error: ${error?.message || 'Unknown error'}. Check console!`)
-        setTimeout(() => {
-          setShowTrack(false)
-          setIsRacing(false)
-          setRaceHash(null)
-        }, 5000)
+        setShowTrack(false)
+        setIsRacing(false)
+        setRaceHash(null)
+        setLastProcessedHash(null) // Allow retry on error
+        resetWrite()
       }
     }
 
     handleRaceComplete()
-  }, [isConfirmed, hash, publicClient, address, isRacing, raceHash, refetchJackpot, refetchPonyBalance, refetchEthBalance, resetWrite])
+  }, [isConfirmed, hash, publicClient, address, isRacing, raceHash, lastProcessedHash, refetchJackpot, refetchPonyBalance, refetchEthBalance, resetWrite])
 
   // Track when we start a race transaction
   useEffect(() => {

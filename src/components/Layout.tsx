@@ -1,9 +1,9 @@
 import { Link, Outlet } from 'react-router-dom'
-import { useAccount, useConnect, useDisconnect, useSwitchChain, useReadContract } from 'wagmi'
-import { useState, useEffect } from 'react'
-import { celo } from 'wagmi/chains'
+import { useAccount, useConnect, useDisconnect, useReadContract } from 'wagmi'
+import { useState } from 'react'
 import './Layout.css'
 import TokenPriceBar from './TokenPriceBar'
+import ChainSwitcher from './ChainSwitcher'
 
 const PONY_TOKEN_ADDRESS = '0x000BE46901ea6f7ac2c1418D158f2f0A80992c07'
 const MIN_PONY_BALANCE = BigInt('1000000000000000000000000000000') // 1 trillion PONY (18 decimals)
@@ -19,10 +19,9 @@ const PONY_TOKEN_ABI = [
 ] as const
 
 export default function Layout() {
-  const { address, isConnected, chain } = useAccount()
+  const { address, isConnected } = useAccount()
   const { connectors, connect } = useConnect()
   const { disconnect } = useDisconnect()
-  const { switchChain } = useSwitchChain()
   const [showConnectors, setShowConnectors] = useState(false)
 
   // Check PONY balance for PVP access
@@ -37,25 +36,10 @@ export default function Layout() {
 
   const hasPVPAccess = ponyBalance && ponyBalance >= MIN_PONY_BALANCE
 
-  // Auto-switch to Celo when wallet connects or chain changes
-  useEffect(() => {
-    if (isConnected && chain && chain.id !== celo.id) {
-      console.log(`Wrong chain detected: ${chain.id}, switching to Celo (${celo.id})...`)
-      switchChain({ chainId: celo.id })
-    }
-  }, [isConnected, chain, switchChain])
-
-  // Additional check on mount - force Celo if connected to wrong chain
-  useEffect(() => {
-    if (isConnected && chain && chain.id !== celo.id) {
-      console.log('Initial check: switching to Celo')
-      switchChain({ chainId: celo.id })
-    }
-  }, [])
-
 
   return (
     <div className="layout">
+      <ChainSwitcher />
       <TokenPriceBar />
 
       <header className="site-header">
@@ -79,20 +63,9 @@ export default function Layout() {
 
           <div className="wallet-section">
             {isConnected && address ? (
-              <>
-                {chain && chain.id !== celo.id && (
-                  <button
-                    onClick={() => switchChain({ chainId: celo.id })}
-                    className="connect-btn"
-                    style={{ background: '#ff6b6b', marginRight: '8px' }}
-                  >
-                    Switch to Celo
-                  </button>
-                )}
-                <button onClick={() => disconnect()} className="disconnect-btn">
-                  Disconnect
-                </button>
-              </>
+              <button onClick={() => disconnect()} className="disconnect-btn">
+                Disconnect
+              </button>
             ) : (
               <div className="connect-dropdown">
                 <button
