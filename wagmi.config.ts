@@ -11,9 +11,9 @@ export const config = createConfig({
   transports: {
     [celo.id]: http('https://1rpc.io/celo', {
       batch: false,
-      retryCount: 2,
-      retryDelay: 2000,
-      timeout: 30000,
+      retryCount: 3,
+      retryDelay: 1000,
+      timeout: 10000, // 10 second timeout for RPC requests
     }),
     [mainnet.id]: http(),
     [base.id]: http(),

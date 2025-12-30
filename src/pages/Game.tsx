@@ -223,8 +223,16 @@ export default function Game() {
 
   // Check if approved whenever allowance or selectedBet changes
   useEffect(() => {
+    console.log('🔍 Allowance check:', {
+      allowance: allowance?.toString(),
+      selectedBet: selectedBet?.toString(),
+      address,
+      comparison: allowance && selectedBet ? `${allowance} >= ${selectedBet} = ${allowance >= selectedBet}` : 'N/A'
+    })
+
     if (allowance && selectedBet) {
       const approved = allowance >= selectedBet
+      console.log(`✅ Setting isApproved = ${approved}`)
       setIsApproved(approved)
 
       // Update status message based on approval state
@@ -244,9 +252,10 @@ export default function Game() {
         }
       }
     } else {
+      console.log('⚠️ Setting isApproved = false (no allowance or selectedBet)')
       setIsApproved(false)
     }
-  }, [allowance, selectedBet, selectedHorse, turboMode])
+  }, [allowance, selectedBet, selectedHorse, turboMode, address])
 
   // Turbo mode: Auto-approve max allowance on first use
   useEffect(() => {
@@ -373,7 +382,18 @@ export default function Game() {
   }
 
   const handleRace = () => {
-    if (selectedHorse === null || !selectedBet || !baseFee || isRacing) return
+    console.log('🎯 handleRace called')
+    console.log('  - selectedHorse:', selectedHorse)
+    console.log('  - selectedBet:', selectedBet?.toString())
+    console.log('  - baseFee:', baseFee?.toString())
+    console.log('  - isRacing:', isRacing)
+    console.log('  - isWritePending:', isWritePending)
+    console.log('  - canRace:', canRace)
+
+    if (selectedHorse === null || !selectedBet || !baseFee || isRacing) {
+      console.log('❌ Race blocked by validation check')
+      return
+    }
 
     // Check if user has enough CELO (baseFee is 1 CELO, gas on CELO is ~0.0001)
     if (ethBalanceData && baseFee) {
@@ -381,12 +401,13 @@ export default function Game() {
       if (ethBalanceData.value < minimumRequired) {
         const needed = formatEther(minimumRequired)
         const have = formatEther(ethBalanceData.value)
+        console.log('❌ Insufficient CELO balance')
         setStatusMessage(`Need ${needed} CELO total (${have} CELO available). Get more CELO!`)
         return
       }
     }
 
-    console.log('Racing with params:')
+    console.log('✅ Racing with params:')
     console.log('  - Horse ID:', selectedHorse)
     console.log('  - Bet Amount:', selectedBet.toString(), 'wei')
     console.log('  - Bet Amount (PONY):', formatEther(selectedBet))
@@ -395,6 +416,7 @@ export default function Game() {
     console.log('  - User CELO Balance:', ethBalanceData ? formatEther(ethBalanceData.value) : 'unknown')
 
     try {
+      console.log('📤 Calling writeContract...')
       // Call writeContract FIRST before any state updates to maintain user interaction chain on mobile
       // Wagmi will handle gas estimation automatically
       writeContract({
@@ -405,13 +427,14 @@ export default function Game() {
         value: baseFee as bigint,
         chainId: 42220
       })
+      console.log('✅ writeContract call succeeded')
 
       // State updates AFTER writeContract to avoid breaking mobile wallet interaction
       setStatusMessage('Sending race transaction...')
       setIsRacing(true)
       setRaceHash(null)
     } catch (error) {
-      console.error('Race error:', error)
+      console.error('❌ Race error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Transaction failed'
 
       // Better error messages
@@ -473,12 +496,15 @@ export default function Game() {
     setStatusMessage('Approval confirmed! Checking allowance...')
 
     const checkAllowance = async () => {
-      // Polling every 3 seconds to respect 3 req/sec rate limit: 10 attempts
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        setStatusMessage(`Verifying approval... (${i + 1}/10)`)
+      // Fast polling: check immediately, then every 1 second for 15 attempts (15 seconds total)
+      for (let i = 0; i < 15; i++) {
+        if (i > 0) {
+          // Only delay after first attempt - 1 second intervals for speed
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        setStatusMessage(`Verifying approval... (${i + 1}/15)`)
         const result = await refetchAllowance()
-        console.log(`Checking allowance... attempt ${i + 1}/10, result:`, result.data?.toString())
+        console.log(`Checking allowance... attempt ${i + 1}/15, result:`, result.data?.toString())
         if (result.data && selectedBet && result.data >= selectedBet) {
           console.log('Allowance detected! Ready to race!')
           setStatusMessage(turboMode ? '🚀 TURBO MODE: Approved! Ready to race!' : '✅ Approved! Now click STEP 2: RACE!')
